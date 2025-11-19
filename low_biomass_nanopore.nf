@@ -337,14 +337,14 @@ workflow {
       }
 
      //---------------------------- Parse input file -------------------------------------------//
-     if(params.input_type = 'single'){
+     if(params.input_type == 'single'){
 
         // One fastq file per sample
         file_ch.map{
                 row -> tuple( "${row.sample_id}", [file("${row.forward}", checkIfExists: true)], deleteWS(row.paired))
                 }.set{reads_ch}
      
-     }else if(params.input_type = 'multiple'){
+     }else if(params.input_type == 'multiple'){
 
          // Multiple fastq files per sample i.e Fastq files have been split but not concatenated per sample
 
@@ -370,24 +370,25 @@ workflow {
 
          CAT_FASTQ_FILES.out.reads
             .join(meta_ch)
-            .set{file_ch}
+            .set{concated_files_ch}
 
         header = Channel.of(["sample_id", "forward", "group", "sample_or_ntc", "concentration", "paired"]) 
 
-        header.concat(file_ch)
-              .collectFile(name: 'samples_file.txt', newLine: true)         
+        header.concat(concated_files_ch)
+              .map{ sample_id, forward, group, sample_or_ntc, concentration, paired ->
+                   "${sample_id},${forward},${group},${sample_or_ntc},${concentration},${paired}"
+              }
+              .collectFile(name: "${launchDir}/samples_file.txt", newLine: true, sort:false)
+              .splitCsv(header:true)
+              .set{InFile_ch}
 
-        Channel.fromPath('samples_file.txt', checkIfExists: true)
-           .splitCsv(header:true)
-           .set{file_ch}
-
-        file_ch.map{ row -> 
+        InFile_ch.map{ row -> 
                     tuple( row.sample_id, [file(row.forward, checkIfExists: true)], deleteWS(row.paired))
                 }.set{reads_ch}
 
         CAT_FASTQ_FILES.out.version | mix(software_versions_ch) | set{software_versions_ch}
 
-     }else if(params.input_type = 'directory'){
+     }else if(params.input_type == 'directory'){
 
          // Directory containing FAST5 or POD5 files
          pod5_dir   = Channel.fromPath(params.input_dir, checkIfExists: true)
@@ -453,11 +454,11 @@ workflow {
     trimmed_ch = PORECHOP.out.reads
     trimmed_qc(Channel.of("trimmed"), params.multiqc_config, trimmed_ch, PORECHOP.out.log)
     // Map trimmed reads to a custom genome with bbmap
-    FILTERED_MAP2GENOME(params.custome_genome, Channel.of("trimmed"), trimmed_ch)
+    //FILTERED_MAP2GENOME(params.custome_genome, Channel.of("trimmed"), trimmed_ch)
     
     // Quality check software capturing
     raw_qc.out.versions | mix(software_versions_ch) | set{software_versions_ch}
-    FILTERED_MAP2GENOME.out.version | mix(software_versions_ch) | set{software_versions_ch}
+    //FILTERED_MAP2GENOME.out.version | mix(software_versions_ch) | set{software_versions_ch}
     filtered_qc.out.versions | mix(software_versions_ch) | set{software_versions_ch}
     trimmed_qc.out.versions | mix(software_versions_ch) | set{software_versions_ch}
 
@@ -472,10 +473,10 @@ workflow {
     remove_host(params.host_name, params.host_url, params.host_fasta,
                 params.host_db_dir, remove_contaminants.out.clean_reads)
     
-    DECONTAMED_MAP2GENOME(params.custome_genome, Channel.of("decontamed"), remove_host.out.clean_reads)
+    //DECONTAMED_MAP2GENOME(params.custome_genome, Channel.of("decontamed"), remove_host.out.clean_reads)
     nohost_qc(Channel.of("nohost"), params.multiqc_config, remove_host.out.clean_reads,remove_host.out.logs)
 
-    DECONTAMED_MAP2GENOME.out.version | mix(software_versions_ch) | set{software_versions_ch}
+    //DECONTAMED_MAP2GENOME.out.version | mix(software_versions_ch) | set{software_versions_ch}
     remove_host.out.versions | mix(software_versions_ch) | set{software_versions_ch}
 
     // Run the analysis based on selection i.e, read-based, assembly-based or both

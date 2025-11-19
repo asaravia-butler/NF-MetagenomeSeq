@@ -119,9 +119,13 @@ process CAT_FASTQ_FILES {
 
     script:
     def readList = reads instanceof List ? reads.collect { it.toString() } : [reads.toString()]
+    def command = readList[0].endsWith('.gz') ? 'zcat' : 'cat'
     """
 
-    cat  ${readList.join(' ')} | gzip --to-stdout ${sample_id}.fastq.gz
+    ${command}  ${readList.join(' ')} > ${sample_id}.fastq 
+
+    [ -f ${sample_id}.fastq.gz ] && rm -rf ${sample_id}.fastq.gz
+    gzip ${sample_id}.fastq
 
     VERSION=\$(echo \$(cat --version 2>&1) | sed 's/^.*coreutils) //; s/ .*\$//')
     echo "cat \${VERSION}" > versions.txt

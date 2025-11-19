@@ -212,7 +212,6 @@ process FILTLONG {
     filtlong \\
         --min_length 200 \\
         --min_mean_q 8 \\
-        --max_length 6019 \\
         ${reads[0]} 2> >(tee ${sample_id}-filtlong.log >&2) \\
         | gzip -n > ${sample_id}${params.filtered_suffix}
 
