@@ -63,9 +63,8 @@ process DORADO_BASECALLER {
     script:
        """
        dorado basecaller hac ${input_dir} \\
-             --device auto \\ 
              --recursive \\
-             --kit-name ${kit_name} \\ 
+             --kit-name ${kit_name} \\
              --min-qscore 8 > basecalled.bam
 
        VERSION=`dorado --version`
