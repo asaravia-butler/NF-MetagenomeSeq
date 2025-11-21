@@ -393,22 +393,21 @@ workflow {
          // Directory containing FAST5 or POD5 files
          pod5_dir   = Channel.fromPath(params.input_dir, checkIfExists: true)
  
-     // Convert FAST5 to POD5
-     if(params.isFast5){
+        // Convert FAST5 to POD5
+        if(params.isFast5){
 
-         input_dir   = Channel.fromPath(params.input_dir, checkIfExists: true)
-         FAST52POD5(input_dir)
+             input_dir   = Channel.fromPath(params.input_dir, checkIfExists: true)
+             FAST52POD5(input_dir)
 
-         pod5_dir = FAST52POD5.out.pod5_dir
-     }
+             pod5_dir = FAST52POD5.out.pod5_dir
+         }
          // Basecall, demultiplex and concatenate demultiplexed fastq files
          DORADO_BASECALLER(pod5_dir, params.kit_name)
          DORADO_DEMUX(DORADO_BASECALLER.out.bam, params.kit_name)
-		 CAT_FASTQ_DIR(DORADO_DEMUX.out.demux_dir)
+         CAT_FASTQ_DIR(DORADO_DEMUX.out.demux_dir)
          
         // Read-in runsheet generated fromm conactenating fastq files above
-        Channel.fromPath(CAT_FASTQ_DIR.out.runsheet, checkIfExists: true)
-           .splitCsv(header:true)
+        CAT_FASTQ_DIR.out.runsheet.splitCsv(header:true)
            .map{
                 row -> tuple( "${row.sample_id}", [file("${row.forward}", checkIfExists: true)])
                 }.set{runsheet_ch}
@@ -418,10 +417,10 @@ workflow {
                 row -> tuple( "${row.sample_id}", deleteWS(row.group),
                                 deleteWS(row.sample_or_ntc), deleteWS(row.concentration),
                                 deleteWS(row.paired) )
-                }.set{file_ch}
+                }.set{InFile_ch}
 
         // Merge the genearted fastq files with their corresponding metadata
-        runsheet_ch.join(file_ch)
+        runsheet_ch.join(InFile_ch)
                     .map{ sample_id, forward, group, sample_or_ntc, concentration, paired -> 
                     tuple( sample_id, [file(forward, checkIfExists: true)], paired)
                 }.set{reads_ch}

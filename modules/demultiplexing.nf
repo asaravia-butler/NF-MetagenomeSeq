@@ -124,7 +124,7 @@ process CAT_FASTQ_FILES {
 
     ${command}  ${readList.join(' ')} > ${sample_id}.fastq 
 
-    [ -f ${sample_id}.fastq.gz ] && rm -rf ${sample_id}.fastq.gz
+    [ -e ${sample_id}.fastq.gz ] && rm -rf ${sample_id}.fastq.gz
     gzip ${sample_id}.fastq
 
     VERSION=\$(echo \$(cat --version 2>&1) | sed 's/^.*coreutils) //; s/ .*\$//')
@@ -147,27 +147,43 @@ process CAT_FASTQ_DIR {
 
     script:
     """
-    # Change to directory containing split fastq files generated from step 2a. split fastq above
+    # Keeping track of working directory
     WORK_DIR=`pwd`
+    # Initiate runsheet header
+    echo "sample_id,forward" > \${WORK_DIR}/runsheet.csv
+  
+    # Change to directory containing split fastq files generated from step 2a. split fastq above
     cd ${demux_dir} # demultiplexed/
+
     # Get unique barcode names from demultiplexed file names
     BARCODES=(\$(ls -1 *fastq* |sed -E 's/.+_(barcode[0-9]+)_.+/\\1/g' | sort -u))
 
-    # Initiate runsheet header
-    echo "sample_id,forward" > runsheet.csv
 
     # Concat separate barcode/sample fastq files into per sample fastq gzippped files
     for sample in \${BARCODES[*]}; do
 
-    [ -d  \${WORK_DIR}/\${sample}/ ] ||  mkdir \${WORK_DIR}/\${sample}/  
-    mv *_\${sample}_*  \${WORK_DIR}/\${sample}/ 
+    [ -d  \${WORK_DIR}/\${sample}/ ] ||  mkdir -p \${WORK_DIR}/\${sample}/  
+    cp *_\${sample}_*  \${WORK_DIR}/\${sample}/ 
 
-    cat \${WORK_DIR}/\${sample}/* | \\
-    gzip --to-stdout \${WORK_DIR}/\${sample}.fastq.gz && \\
+    
+    if ls -1 \${WORK_DIR}/\${sample}/| head -n1| xargs -I {} gzip -t \${WORK_DIR}/\${sample}/{}  2>/dev/null; then 
+   
+        # If files are gzipped
+        zcat \${WORK_DIR}/\${sample}/* > \${WORK_DIR}/\${sample}.fastq 
+
+    else
+
+        # If files are not gzipped
+        cat \${WORK_DIR}/\${sample}/* > \${WORK_DIR}/\${sample}.fastq
+
+    fi
+
+
+    gzip \${WORK_DIR}/\${sample}.fastq && \\
     rm -rf \${WORK_DIR}/\${sample}/
 
     # Create runsheet
-    echo "\${sample},\${WORK_DIR}/\${sample}.fastq.gz" >> runsheet.csv
+    echo "\${sample},\${WORK_DIR}/\${sample}.fastq.gz" >> \${WORK_DIR}/runsheet.csv
 
     done
     cd \${WORK_DIR}/

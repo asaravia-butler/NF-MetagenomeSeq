@@ -69,7 +69,7 @@ process FLYE {
     flye --meta \\
         --out-dir . \\
         --threads ${task.cpus} \\
-        --nano-hq  ${reads}  
+        --nano-hq  ${reads}  || touch assembly.fasta 
 
     mv assembly.fasta ${sample_id}-assembly.fasta
     mv flye.log ${sample_id}-assembly.log
@@ -93,12 +93,21 @@ process POLISH_ASSEMBLY {
 
     script:
     """
-    medaka_consensus \\
-        -t ${task.cpus} \\
-        -i ${reads} \\
-        -d ${assembly} \\
-        -o .
+    # Check if contig assembly was successul before attempting to polish with medaka
+    if [ -s ${assembly} ]; then
 
+        medaka_consensus \\
+            -t ${task.cpus} \\
+            -i ${reads} \\
+            -d ${assembly} \\
+            -o .
+
+    else 
+
+        printf "${sample_id}\\tNo contig assembled, hence, contig polishing wasn't performed.\\n"
+        touch consensus.fasta
+    
+   fi
     mv consensus.fasta ${sample_id}_polished.fasta
 
     VERSION=`medaka --version 2>&1 | sed 's/medaka //g'`
