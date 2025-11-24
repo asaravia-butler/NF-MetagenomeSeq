@@ -6,7 +6,7 @@ nextflow.enable.dsl = 2
 ****************************************************************************************/
 
 // a 2-column (single-end) or 3-column (paired-end) file
-//params.prefix = "raw" // "filetered"
+//params.prefix = "raw" // "filtered"
 //params.csv_file = "file.csv" 
 //params.swift_1S = false
 //params.adapters = "${projectDir}/config/bbtools_dapters.fa"

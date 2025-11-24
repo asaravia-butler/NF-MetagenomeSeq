@@ -79,6 +79,7 @@ process DORADO_DEMUX {
 
 
     tag "Demultiplexing basecalled bam"
+    label "dorado"
 
     input:
         path(basecalled)
