@@ -83,7 +83,7 @@ process DORADO_DEMUX {
 
     input:
         path(basecalled)
-        path(kit_name)
+        val(kit_name)
 
     output:
         path("demultiplexed/"), emit: demux_dir
@@ -156,14 +156,14 @@ process CAT_FASTQ_DIR {
     cd ${demux_dir} # demultiplexed/
 
     # Get unique barcode names from demultiplexed file names
-    BARCODES=(\$(ls -1 *fastq* |sed -E 's/.+_(barcode[0-9]+)_.+/\\1/g' | sort -u))
+    BARCODES=(\$(ls -1 *fastq* | sed -E 's/.+_(barcode[0-9]+).+/\\1/g' | grep -v 'unclassified' | sort -u))
 
 
     # Concat separate barcode/sample fastq files into per sample fastq gzippped files
     for sample in \${BARCODES[*]}; do
 
     [ -d  \${WORK_DIR}/\${sample}/ ] ||  mkdir -p \${WORK_DIR}/\${sample}/  
-    cp *_\${sample}_*  \${WORK_DIR}/\${sample}/ 
+    cp *_\${sample}*  \${WORK_DIR}/\${sample}/ 
 
     
     if ls -1 \${WORK_DIR}/\${sample}/| head -n1| xargs -I {} gzip -t \${WORK_DIR}/\${sample}/{}  2>/dev/null; then 

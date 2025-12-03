@@ -421,8 +421,8 @@ workflow {
 
         // Merge the genearted fastq files with their corresponding metadata
         runsheet_ch.join(InFile_ch)
-                    .map{ sample_id, forward, group, sample_or_ntc, concentration, paired -> 
-                    tuple( sample_id, [file(forward, checkIfExists: true)], paired)
+                    .map{sample_id, forward, group, sample_or_ntc, concentration, paired -> 
+                    tuple(sample_id, forward, paired)
                 }.set{reads_ch}
 
         DORADO_BASECALLER.out.version | mix(software_versions_ch) | set{software_versions_ch}
