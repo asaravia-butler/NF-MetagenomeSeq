@@ -13,12 +13,12 @@ include { SETUP_CAT_DB; SETUP_KOFAMSCAN_DB; SETUP_GTDBTK_DB;
 if(params.technology == "illumina"){
 
 include { ASSEMBLE } from "./assembly.nf"
-include { MAPPING; SAM_TO_BAM } from "./read_mapping.nf"
+include { MAPPING as SHORT_MAPPING; SAM_TO_BAM } from "./read_mapping.nf"
 
 }else{
 
     include { FLYE ; POLISH_ASSEMBLY } from "./assembly.nf"
-    include { LONG_MAPPING as MAPPING } from "./long_read_mapping.nf"
+    include { LONG_MAPPING } from "./long_read_mapping.nf"
     include { SAMTOOLS_SORT as SAM_TO_BAM } from "./samtools.nf"
 }
 
@@ -84,8 +84,15 @@ workflow assembly_based {
               .collectFile(name: "${params.assemblies_dir}/Failed-assemblies.tsv", cache: false)
         
         // Map reads to assembly
-        MAPPING(assembly_ch.join(filtered_ch))
-        MAPPING.out.sam | SAM_TO_BAM
+        if(params.technology == "illumina"){
+            SHORT_MAPPING(assembly_ch.join(filtered_ch))
+            SHORT_MAPPING.out.sam | SAM_TO_BAM
+            SHORT_MAPPING.out.version | mix(software_versions_ch) | set{software_versions_ch}
+        }else{
+            LONG_MAPPING(assembly_ch.join(filtered_ch))
+            LONG_MAPPING.out.sam | SAM_TO_BAM
+            LONG_MAPPING.out.version | mix(software_versions_ch) | set{software_versions_ch}
+        }
         read_mapping_ch = SAM_TO_BAM.out.bam
 
         // Annotate assembly
@@ -199,7 +206,6 @@ workflow assembly_based {
         // Capture software versions 
         RENAME_HEADERS.out.version | mix(software_versions_ch) | set{software_versions_ch}
         SUMMARIZE_ASSEMBLIES.out.version | mix(software_versions_ch) | set{software_versions_ch}
-        MAPPING.out.version | mix(software_versions_ch) | set{software_versions_ch}
         SAM_TO_BAM.out.version | mix(software_versions_ch) | set{software_versions_ch}
         CALL_GENES.out.version | mix(software_versions_ch) | set{software_versions_ch}
         REMOVE_LINEWRAPS.out.version | mix(software_versions_ch) | set{software_versions_ch}

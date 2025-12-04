@@ -472,10 +472,10 @@ workflow {
     remove_host(params.host_name, params.host_url, params.host_fasta,
                 params.host_db_dir, remove_contaminants.out.clean_reads)
     
-    //DECONTAMED_MAP2GENOME(params.custome_genome, Channel.of("decontamed"), remove_host.out.clean_reads)
+    DECONTAMED_MAP2GENOME(params.custome_genome, Channel.of("decontamed"), remove_host.out.clean_reads)
     nohost_qc(Channel.of("nohost"), params.multiqc_config, remove_host.out.clean_reads,remove_host.out.logs)
 
-    //DECONTAMED_MAP2GENOME.out.version | mix(software_versions_ch) | set{software_versions_ch}
+    DECONTAMED_MAP2GENOME.out.version | mix(software_versions_ch) | set{software_versions_ch}
     remove_host.out.versions | mix(software_versions_ch) | set{software_versions_ch}
 
     // Run the analysis based on selection i.e, read-based, assembly-based or both
@@ -504,7 +504,7 @@ workflow {
      // Software Version Capturing - combining all captured sofware versions
      nf_version = "Nextflow Version ".concat("${nextflow.version}")
      nextflow_version_ch = Channel.value(nf_version)
-     workflow_version = "MGIllimina ".concat("${workflow.manifest.version}")
+     workflow_version = "MGNanopore ".concat("${workflow.manifest.version}")
      workflow_version_ch =  Channel.value(workflow_version)
 
      //  Write software versions to file
