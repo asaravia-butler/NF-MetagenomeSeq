@@ -14,17 +14,17 @@
 
 ### Implementation Tools
 
-The current GeneLab Illumina amplicon sequencing data processing pipeline (AmpIllumina), [GL-DPPD-7104-C.md](https://github.com/nasa/GeneLab_Data_Processing/blob/master/Amplicon/Illumina/Pipeline_GL-DPPD-7104_Versions/GL-DPPD-7104-C.md), is implemented as a [Nextflow](https://nextflow.io/) DSL2 workflow and utilizes [Singularity](https://docs.sylabs.io/guides/3.10/user-guide/introduction.html) containers, [Docker](https://docs.docker.com/get-started/) containers, or [conda](https://docs.conda.io/en/latest/) environments to install/run all tools. This workflow is run using the command line interface (CLI) of any unix-based system.  While knowledge of creating workflows in Nextflow is not required to run the workflow as is, [the Nextflow documentation](https://nextflow.io/docs/latest/index.html) is a useful resource for users who want to modify and/or extend this workflow.   
+The current GeneLab metagenomics sequencing data processing pipelines, Low biomass [long-read](https://github.com/nasa/GeneLab_Data_Processing/blob/DEV_Metagenomics_low_biomass/Metagenomics/Low_Biomass/Nanopore) and Low biomass [short-read](https://github.com/nasa/GeneLab_Data_Processing/blob/DEV_Metagenomics_low_biomass/Metagenomics/Low_Biomass/Illumina), are implemented as a [Nextflow](https://nextflow.io/) DSL2 workflow and utilizes [Singularity](https://docs.sylabs.io/guides/3.10/user-guide/introduction.html) containers, [Docker](https://docs.docker.com/get-started/) containers, or [conda](https://docs.conda.io/en/latest/) environments to install/run all tools. This workflow is run using the command line interface (CLI) of any unix-based system.  While knowledge of creating workflows in Nextflow is not required to run the workflow as is, [the Nextflow documentation](https://nextflow.io/docs/latest/index.html) is a useful resource for users who want to modify and/or extend this workflow.   
 
 ### Resource Requirements <!-- omit in toc -->
 
 The table below details the default maximum resource allocations for individual Nextflow processes.
 
 | CPU Cores | Memory |
-|-------------------|----------------|
-| 2                 | 5 GB           |
+|--------------------|------------------|
+| 10                 | 600 GB           |
 
-> **Note:** These per-process resource allocations are defaults. They can be adjusted by modifying `cpus` and `memory` directives in the configuration file: [`nextflow.config`](workflow_code/nextflow.config).
+> **Note:** These per-process resource allocations are defaults. They can be adjusted by modifying `cpus` and `memory` directives in the configuration file: [`nextflow.config`](nextflow.config).
 
 <br>
 
@@ -90,11 +90,11 @@ We recommend installing Singularity on a system wide level as per the associated
 
 ### 2. Download the Workflow Files
 
-All files required for utilizing the NF_AmpIllumina GeneLab workflow for processing amplicon Illumina data are in the [workflow_code](workflow_code) directory. To get a copy of the latest *NF_AmpIllumina* version on to your system, the code can be downloaded as a zip file from the release page then unzipped after downloading by running the following commands: 
+All files required for utilizing the GeneLab metagenomics workflow for processing either short- or long-read low biomass sequencing data are available in this repository. To get a copy of the latest workflow version on to your system, clone this repository then `cd` into the repository directory by running the following commands: 
 
 ```bash
-wget https://github.com/nasa/GeneLab_AmpliconSeq_Workflow/releases/download/v1.0.7/NF_AmpIllumina_1.0.7.zip
-unzip NF_AmpIllumina_1.0.7.zip && cd NF_AmpIllumina_1.0.7
+git clone https://github.com/olabiyi/NF-MetagenomeSeq.git
+cd NF-MetagenomeSeq
 ```
 
 <br>
@@ -105,9 +105,9 @@ unzip NF_AmpIllumina_1.0.7.zip && cd NF_AmpIllumina_1.0.7
 
 Although Nextflow can fetch Singularity images from a url, doing so may cause issues as detailed [here](https://github.com/nextflow-io/nextflow/issues/1210).
 
-To avoid this issue, run the following command to fetch the Singularity images prior to running the NF_AmpIllumina workflow:
+To avoid this issue, run the following command to fetch the Singularity images prior to running the GeneLab metagenomics workflow:
 
-> Note: This command should be run in the location containing the `NF_AmpIllumina_1.0.7` directory that was downloaded in [step 2](#2-download-the-workflow-files) above. Depending on your network speed, fetching the images will take ~20 minutes. Approximately 4GB of RAM is needed to download and build the Singularity images.
+> Note: This command should be run from within the `NF-MetagenomeSeq` directory that was downloaded in [step 2](#2-download-the-workflow-files) above. Depending on your network speed, fetching the images will take ~20 minutes. Approximately 4GB of RAM is needed to download and build the Singularity images.
 
 ```bash
 bash ./bin/prepull_singularity.sh nextflow.config
@@ -123,111 +123,120 @@ export NXF_SINGULARITY_CACHEDIR=$(pwd)/singularity
 
 ---
 
-### 4. Run the Workflow
+### 4. Run the Workflows
 
-> ***Note:** All the commands in this step assume that the workflow will be run from within the `NF_AmpIllumina_1.0.7` directory that was downloaded in [step 2](#2-download-the-workflow-files) above. They may also be run from a different location by providing the full path to the main.nf workflow file in the `NF_AmpIllumina_1.0.7` directory.*
-
-For options and detailed help on how to run the workflow, run the following command:
-
-```bash
-nextflow run main.nf --help
-```
-
-> Note: Nextflow commands use both single hyphen arguments (e.g. -help) that denote general Nextflow arguments and double hyphen arguments (e.g. --input_file) that denote workflow specific parameters.  Take care to use the proper number of hyphens for each argument.
+> **Notes:**
+> - All the commands in this step assume that the workflow will be run from within the `NF-MetagenomeSeq` directory that was downloaded in [step 2](#2-download-the-workflow-files) above. They may also be run from a different location by providing the full paths to the launch.sh script, low_biomass_nanopore.nf, low_biomass_illumina.nf, and nextflow.config workflow files in the `NF-MetagenomeSeq` directory.*
+>
+> - Nextflow commands use both single hyphen arguments (e.g. -help) that denote general Nextflow arguments and double hyphen arguments (e.g. --input_file) that denote workflow specific parameters.  Take care to use the proper number of hyphens for each argument.
 
 <br>
 
-#### 4a. Approach 1: Start with OSD or GLDS accession as input
+#### 4a. Low Biomass Long Read Workflow
+
+The GeneLab Metagenomics Low Biomass Long Read workflow is designed to process data generated from long-read platforms such as [Oxford Nanopore](https://nanoporetech.com/) using the [GeneLab Metagenomics Low Biomass Long Read Pipeline](https://github.com/nasa/GeneLab_Data_Processing/blob/DEV_Metagenomics_low_biomass/Metagenomics/Low_Biomass/Nanopore). Below are 3 different approaches for running the workflow, depending on the input files provided.
+
+For options and detailed help on how to run the low biomass long read workflow, run the following command:
 
 ```bash
-nextflow run main.nf \
-   -resume \
-   -profile singularity \
-   --target_region 16S \
-   --accession OSD-487 
+nextflow run low_biomass_nanopore.nf --help
 ```
 
-<br>
-
-#### 4b. Approach 2: Start with a runsheet csv file as input
+##### 4ai. Approach 1: Start with pod5 or fast5 files as input
 
 ```bash
-nextflow run main.nf \
-   -resume \
-   -profile singularity \
-   --target_region 16S \
-   --input_file PE_file.csv \
-   --F_primer AGAGTTTGATCCTGGCTCAG \
-   --R_primer CTGCCTCCCGTAGGAGT 
+bash ./launch.sh processing \
+   low_biomass_nanopore.nf \
+   '--input_file input_dir_barcodes.csv --errorStrategy "ignore" '
 ```
 
 <br>
 
+##### 4aii. Approach 2: Start with multiple FASTQ files per sample as input
 
-**Required Parameters For All Approaches:**
+```bash
+bash ./launch.sh processing \
+   low_biomass_nanopore.nf \
+   '--input_file multiple.csv --errorStrategy "ignore" '
+```
 
-* `main.nf` - Instructs Nextflow to run the NF_AmpIllumina workflow. If running in a directory other than `NF_AmpIllumina_1.0.7`, replace with the full path to the NF_AmpIllumina main.nf workflow file.
-* `-resume` - Resumes  workflow execution using previously cached results
-* `-profile` – Specifies the configuration profile(s) to load (multiple options can be provided as a comma-separated list)
+<br>
+
+##### 4aiii. Approach 3: Start with one FASTQ file per sample as input
+
+```bash
+bash ./launch.sh processing \
+   low_biomass_nanopore.nf \
+   '--input_file single.csv --errorStrategy "ignore" '
+```
+
+<br>
+
+**Required Parameters For All Long Read Approaches:**
+
+* `./launch.sh` - Positional argument specifying the bash file that contains the nextflow command to execute. If running in a directory other than `NF-MetagenomeSeq`, replace with the full path to the launch.sh script.
+* `processing` - Positional argument specifying the run mode, `processing` refers to the mode used to process the input data using the respective GeneLab pipeline.
+* `low_biomass_nanopore.nf` - Instructs Nextflow to run the Genelab Low Biomass Long Read (Nanopore) workflow. If running in a directory other than `NF-MetagenomeSeq`, replace with the full path to the low_biomass_nanopore.nf workflow file.
+* `'--input_file *.csv --errorStrategy "ignore" '` - Positional argument specifying a set of parameters to pass into the nextflow run command.
+  * `--errorStrategy "ignore"` - Instructions nextflow to continue processing the dataset even if an error is encountered.
+  * `--input_file *.csv` - Specifies the input csv file containing required metadata about the samples including barcode information and paths to the input file(s) for each sample.
+  * > *Note: This input files requires specifc formatting to be interpreted correctly. Please see the [runsheet documentation](examples/runsheet) in this repository for examples on how to format this file type for each approach.
+
+<br>
+
+#### 4b. Low Biomass Short Read Workflow
+
+The GeneLab Metagenomics Low Biomass Short Read workflow is designed to process data generated from short-read platforms such as [Illumina](https://www.illumina.com/) using the [GeneLab Metagenomics Low Biomass Short Read Pipeline](https://github.com/nasa/GeneLab_Data_Processing/blob/DEV_Metagenomics_low_biomass/Metagenomics/Low_Biomass/Illumina). Below are 2 different approaches for running the workflow, depending on the input files provided.
+
+For options and detailed help on how to run the low biomass short read workflow, run the following command:
+
+```bash
+nextflow run low_biomass_illumina.nf --help
+```
+
+##### 4bi. Approach 1: Start with paired-end FASTQ files as input
+
+```bash
+bash ./launch.sh processing \
+   low_biomass_illumina.nf \
+   '--input_file PE_file.csv --errorStrategy "ignore" --technology "illumina" '
+```
+
+<br>
+
+##### 4bii. Approach 2: Start with single-end FASTQ files as input
+
+```bash
+bash ./launch.sh processing \
+   low_biomass_illumina.nf \
+   '--input_file SE_file.csv --errorStrategy "ignore" --technology "illumina" '
+```
+
+<br>
+
+**Required Parameters For All Short Read Approaches:**
+
+* `./launch.sh` - Positional argument specifying the bash file that contains the nextflow command to execute. If running in a directory other than `NF-MetagenomeSeq`, replace with the full path to the launch.sh script.
+* `processing` - Positional argument specifying the run mode, `processing` refers to the mode used to process the input data using the respective GeneLab pipeline.
+* `low_biomass_illumina.nf` - Instructs Nextflow to run the Genelab Low Biomass Short Read (Illumina) workflow. If running in a directory other than `NF-MetagenomeSeq`, replace with the full path to the low_biomass_illumina.nf workflow file.
+* `'--input_file *.csv --errorStrategy "ignore" --technology "illumina" '` - Positional argument specifying a set of parameters to pass into the nextflow run command.
+  * `--errorStrategy "ignore"` - Instructions nextflow to continue processing the dataset even if an error is encountered.
+  * `--technology "illumina"` - Specifies the technology type used to generate the sequencing data.
+  * `--input_file *.csv` - Specifies the input csv file containing required metadata about the samples including paths to the input file(s) for each sample.
+  * > *Note: This input files requires specifc formatting to be interpreted correctly. Please see the [runsheet documentation](examples/runsheet) in this repository for examples on how to format this file type for each approach.
+
+<br>
+
+**Additional [Optional] Parameters For All Approaches For Both Long- and Short-Read**
+> *Note: See `nextflow run -h` and [Nextflow's CLI run command documentation](https://nextflow.io/docs/latest/cli.html#run) for more options and details on how to run Nextflow.*
+
+* `'-profile'` – Specifies the configuration profile(s) to load (multiple options can be provided as a comma-separated list).
    * Software environment profile options (choose one):
       * `singularity` - instructs Nextflow to use Singularity container environments
       * `docker` - instructs Nextflow to use Docker container environments
       * `conda` - instructs Nextflow to use conda environments via the conda package manager
-        > *Note: By default, Nextflow will create environments at runtime using the yaml files in the [workflow_code/envs](workflow_code/envs/) folder. You can change this behavior by using the `--conda_*` workflow parameters or by editing the [nextflow.config](workflow_code/nextflow.config) file to specify a centralized conda environments directory via the `conda.cacheDir` parameter.*
-      * `mamba` - instructs Nextflow to use conda environments via the mamba package manager 
-   * Other option (can be combined with the software environment option above using a comma, e.g. `-profile slurm,singularity`):
-      * `slurm` - instructs Nextflow to use the [Slurm cluster management and job scheduling system](https://slurm.schedmd.com/overview.html) to schedule and run the jobs on a Slurm HPC cluster
-* `--target_region` - Specifies the amplicon target region to be analyzed (type: string, options: 16S, 18S, or ITS)
-
-
-**Additional Required Parameters For Approach 1:** 
-
-* `--accession` - The OSD or GLDS accession number specifying the [OSDR](https://osdr.nasa.gov/bio/repo/) dataset to process, e.g. OSD-487 or GLDS-487 (type: string)
-  > *Note: Not all datasets have the same OSD and GLDS number, so make sure the correct OSD or GLDS number is specified*
-
-
-**Additional Required Parameters For Approach 2:** 
-
-* `--input_file` –  A single-end or paired-end runsheet csv file containing assay metadata for each sample, including sample_id, forward (path to forward read), [reverse (path to reverse read, for paired-end only),] paired (boolean, TRUE | FALSE), groups (specifies sample treatment group name). Please see the [runsheet documentation](./examples/runsheet) in this repository for examples on how to format this file. (type: string)
-
-* `--F_primer` - Forward primer sequence (type: string)
-
-* `--R_primer` - Reverse primer sequence (type: string)
-
-
-**Additional [Optional] Parameters For All Approaches**
-> *Note: See `nextflow run -h` and [Nextflow's CLI run command documentation](https://nextflow.io/docs/latest/cli.html#run) for more options and details on how to run Nextflow.*
-
-* `--errorStrategy` - Error handling strategy for Nextflow processes. If processes fail, use "ignore" to allow the workflow to continue running (type: string, default: "terminate")
-* `--trim_primers` - Whether primers should be trimmed (type: string, default: "TRUE")
-* `--primers_linked` - Whether forward and reverse primers are linked (type: string, default: "TRUE")
-* `--anchored_primers` - Whether primers are anchored at the start of reads (type: string, default: "TRUE")
-* `--min_cutadapt_len` - Minimum length of reads to keep after Cutadapt trimming (type: integer, default: 130) 
-* `--discard_untrimmed` - Whether to discard untrimmed reads (type: string, default: "TRUE")
-* `--left_trunc` - Truncate forward reads after this many bases. Reads shorter than this are discarded (type: integer, default: 0)
-* `--right_trunc` - Truncate reverse reads after this many bases. Reads shorter than this are discarded (type: integer, default: 0)
-* `--left_maxEE` - Maximum expected errors allowed in forward reads (type: integer, default: 1)
-* `--right_maxEE` - Maximum expected errors allowed in reverse reads (type: integer, default: 1)
-* `--concatenate_reads_only` - Whether to concatenate paired reads end-to-end instead of merging based on overlapping regions (type: string, default: "FALSE")
-* `--rarefaction_depth` - The minimum desired sample rarefaction depth for beta diversity analysis (type: integer, default: 500)
-* `--diff_abund_method` - Differential abundance testing method to use (type: string, default: "all")
-* `--group` - Column name in input CSV file containing groups to be compared (type: string, default: "groups")
-* `--samples_column` - Column name in input CSV file containing sample names (type: string, default: "sample_id")
-* `--remove_struc_zeros` - Whether to remove structural zeros when running ANCOMBC (type: boolean, default: false)
-* `--remove_rare` - Whether to filter out rare features and samples with low library sizes. Set this to true if using `prevalence_cutoff` or `library_cutoff` (type: boolean, default: false)
-* `--prevalence_cutoff` - Taxa with prevalence below this fraction will be excluded (type: float, default: 0)
-* `--library_cutoff` - Samples with library sizes below this threshold will be excluded (type: integer, default: 0)
-* `--output_prefix` - Prefix to add to output filenames, e.g. "Study1_". If the string is not empty and does not end with '_' or '-', an underscore will be automatically appended (type: string, default: "")
-* `--assay_suffix` - Suffix to add to output filenames (type: string, default: "_GLAmpSeq")
-* `--use_conda` - Whether Conda environments should be used to run Nextflow processes (type: boolean, default: false)
-* `--conda_cutadapt` - Path to existing Cutadapt conda environment (type: string, default: null)
-* `--conda_diversity` - Path to existing R diversity analysis conda environment (type: string, default: null)
-* `--conda_dp_tools` - Path to existing dp_tools conda environment (type: string, default: null)
-* `--conda_fastqc` - Path to existing FastQC conda environment (type: string, default: null)
-* `--conda_multiqc` - Path to existing MultiQC conda environment (type: string, default: null)
-* `--conda_R` - Path to existing R conda environment (type: string, default: null)
-* `--conda_zip` - Path to existing zip conda environment (type: string, default: null)
-* `--conda_wget` - Path to existing wget conda environment (type: string, default: null)
+        > *Note: By default, Nextflow will create environments at runtime using the `singularity` approach.*
+* `'--assay_suffix ""'` – Specifies the suffix to add to each output file.
 
 <br>
 
@@ -245,7 +254,9 @@ Once you've downloaded the workflow template, you can modify the parameters in t
 
 #### 5a. Main Outputs
 
-The outputs from this pipeline are documented in the [GL-DPPD-7104-C](https://github.com/nasa/GeneLab_Data_Processing/blob/master/Amplicon/Illumina/Pipeline_GL-DPPD-7104_Versions/GL-DPPD-7104-C.md) processing protocol.
+* The outputs from the GeneLab Low Biomass Long Read Metagenomics workflow are documented in the [GL-DPPD-7116](https://github.com/nasa/GeneLab_Data_Processing/blob/DEV_Metagenomics_low_biomass/Metagenomics/Low_Biomass/Nanopore/GL-DPPD-7116.md) processing pipeline.
+  
+* The outputs from the GeneLab Low Biomass Short Read Metagenomics workflow are documented in the [GL-DPPD-7117](https://github.com/nasa/GeneLab_Data_Processing/blob/DEV_Metagenomics_low_biomass/Metagenomics/Low_Biomass/Illumina/GL-DPPD-7117.md) processing pipeline.
 
 #### 5b. Resource Logs
 
@@ -262,52 +273,14 @@ Standard Nextflow resource usage logs are also produced as follows:
 
 ---
 
-### 6. Post-processing
-
-> Please note that to run the post-processing workflow successfully, you MUST run the processing workflow above via the [launch.sh](workflow_code/launch.sh) script first. Please see the [script](workflow_code/launch.sh) for how to run it and make sure to edit the place holders before running it.
-
-The post-processing workflow generates a README file, a protocols file, an md5sums table, and a file association table suitable for uploading to OSDR.
-
-For options and detailed help on how to run the post-processing workflow, run the following command:
-
-```bash
-nextflow run post_processing.nf --help
-```
-
-To generate the post-processing files after running the main processing workflow successfully, modify and set the parameters in [post_processing.config](workflow_code/post_processing.config), then run the following command:
-
-```bash
-nextflow run post_processing.nf \
-   -c post_processing.config \ 
-   -resume \
-   -profile singularity
-``` 
-
-The outputs of the post-processing workflow are described below:
-> *Note: The outputs will be in a directory called `Post_Processing` by default*
-
-**Post processing workflow output files** 
- - Post_processing/FastQC_Outputs/filtered_multiqc_GLAmpSeq_report.zip (Filtered sequence MultiQC report with paths purged) 
- - Post_processing/FastQC_Outputs/raw_multiqc_GLAmpSeq_report.zip (Raw sequence MultiQC report with paths purged)
- - Post_processing/<GLDS_accession>_associated-file-names.tsv (File association table for OSDR curation)
- - Post_processing/<GLDS_accession>_amplicon-validation.log (Automated verification and validation log file)
- - Post_processing/processed_md5sum_GLAmpSeq.tsv (md5sums for the files published on OSDR)
- - Post_processing/processing_info_GLAmpSeq.zip  (Zip file containing all files used to run the workflow and required logs with paths purged) 
- - Post_processing/protocol.txt  (File describing the methods used by the workflow)
- - Post_processing/README_GLAmpSeq.txt (README file listing and describing the outputs of the workflow)
-
-<br>
-
----
-
 ## License
 
-The software for the Amplicon Seq workflow is released under the [NASA Open Source Agreement (NOSA) Version 1.3](License/Amplicon_NOSA_License.pdf).
+The software for the GeneLab Metagenomics workflow is released under the [NASA Open Source Agreement (NOSA) Version 1.3](License/Metagenomics_NOSA_License.pdf).
 
 
 ### 3rd Party Software Licenses
 
-Licenses for the 3rd party open source software utilized in the Amplicon Seq workflow can be found in the [3rd_Party_Licenses sub-directory](License/3rd_Party_Licenses). 
+Licenses for the 3rd party open source software utilized in the GeneLab Metagenomics workflow can be found in the [3rd_Party_Licenses sub-directory](License/3rd_Party_Licenses). 
 
 <br>
 
