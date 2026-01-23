@@ -38,16 +38,19 @@ The table below details the default maximum resource allocations for individual 
 
 3. [Fetch Singularity Images](#3-fetch-singularity-images)  
 
-4. [Run the Workflow](#4-run-the-workflow)  
-   4a. [Approach 1: Start with OSD or GLDS accession as input](#4a-approach-1-start-with-an-osd-or-glds-accession-as-input)  
-   4b. [Approach 2: Start with a runsheet csv file as input](#4b-approach-2-start-with-a-runsheet-csv-file-as-input)  
+4. [Run the Workflows](#4-run-the-workflows)  
+   4a. [Low Biomass Long Read Workflow](#4a-low-biomass-long-read-workflow)
+       4ai. [Approach 1: Approach 1: Start with pod5 or fast5 files as input](#4ai-approach-1-start-with-pod5-or-fast5-files-as-input)
+       4aii. [Approach 2: Start with multiple FASTQ files per sample as input](#4aii-approach-2-start-with-multiple-fastq-files-per-sample-as-input)
+       4aiii. [Approach 3: Start with one FASTQ file per sample as input](#4aiii-approach-3-start-with-one-fastq-file-per-sample-as-input)
+   4b. [Low Biomass Short Read Workflow](#4b-low-biomass-short-read-workflow)
+       4bi. [Approach 1: Start with paired-end FASTQ files as input](#4bi-approach-1-start-with-paired-end-fastq-files-as-input)
+       4bii. [Approach 2: Start with single-end FASTQ files as input](#4bii-approach-2-start-with-single-end-fastq-files-as-input) 
    4c. [Modify parameters and compute resources in the Nextflow config file](#4c-modify-parameters-and-compute-resources-in-the-nextflow-config-file)  
 
 5. [Workflow Outputs](#5-workflow-outputs)  
    5a. [Main outputs](#5a-main-outputs)  
    5b. [Resource logs](#5b-resource-logs)  
-
-6. [Post-processing](#6-post-processing)  
 
 <br>
 
