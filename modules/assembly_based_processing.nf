@@ -28,15 +28,33 @@ include { KO_ANNOTATION; FILTER_KFAMSCAN } from "./assembly_annotation.nf"
 include { TAX_CLASSIFICATION } from "./assembly_annotation.nf"
 include { GET_COV_AND_DET } from "./coverage.nf"
 include { COMBINE_GENE_ANNOTS_TAX_AND_COVERAGE; MAKE_COMBINED_GENE_LEVEL_TABLES } from "./combine_contig_annotation.nf"
+
+// Gene taxonomy
+include { ASSEMBLY_TABLE as GT_ASSEMBLY_TABLE; HEATMAP as GT_UNFILTERED_HEATMAP } from "./downstream_analysis.nf"
+include { FILTER_RARE as GT_FILTER_RARE; HEATMAP as GT_FILTERED_HEATMAP } from "./downstream_analysis.nf"
+include { DECONTAM as GT_DECONTAM; HEATMAP as GT_DECONTAM_HEATMAP } from "./downstream_analysis.nf"
+
+// Gene functions/KO
+include { ASSEMBLY_TABLE as GF_ASSEMBLY_TABLE; HEATMAP as GF_UNFILTERED_HEATMAP } from "./downstream_analysis.nf"
+include { FILTER_RARE as GF_FILTER_RARE; HEATMAP as GF_FILTERED_HEATMAP } from "./downstream_analysis.nf"
+include { DECONTAM as GF_DECONTAM; HEATMAP as GF_DECONTAM_HEATMAP } from "./downstream_analysis.nf"
+
+// Contig taxonomy
 include { COMBINE_CONTIG_TAX_AND_COVERAGE; MAKE_COMBINED_CONTIG_TAX_TABLES } from "./combine_contig_annotation.nf"
+include { ASSEMBLY_TABLE as CONTIG_ASSEMBLY_TABLE; HEATMAP as CONTIG_UNFILTERED_HEATMAP } from "./downstream_analysis.nf"
+include { FILTER_RARE as CONTIG_FILTER_RARE; HEATMAP as CONTIG_FILTERED_HEATMAP } from "./downstream_analysis.nf"
+include { DECONTAM as CONTIG_DECONTAM; HEATMAP as CONTIG_DECONTAM_HEATMAP } from "./downstream_analysis.nf"
+
 include { METABAT_BINNING } from "./binning.nf"
 include { summarize_bins } from "./summarize_bins.nf"
 include { summarize_mags } from "./summarize_MAG.nf"
 include { GENERATE_ASSEMBLY_PROCESSING_OVERVIEW_TABLE } from "./summarize_assembly-based_processing.nf"
 
+
 workflow assembly_based {
 
     take:
+        metadata
         file_ch
         filtered_ch
         ko_db_dir
@@ -146,16 +164,95 @@ workflow assembly_based {
                                                          sample_id, coverage -> file("${coverage}")
                                                          }.collect()
 
+        // Gene level
         MAKE_COMBINED_GENE_LEVEL_TABLES(gene_coverage_annotation_and_tax_files_ch)
 
+        // ------------------ Gene taxonomy
+        // Unfiltered
+        gene_taxonomy_ch = Channel.of(['taxonomy', 'Gene'])
+        GT_ASSEMBLY_TABLE(gene_taxonomy_ch, MAKE_COMBINED_GENE_LEVEL_TABLES.out.norm_taxonomy_coverages, 
+                          SUMMARIZE_ASSEMBLIES.out.summary)
+        unfilt_gene_taxonomy_heatmap_meta = Channel.of([group: "group", samples: 'sample_id',
+                                               prefix:  'NoFilter-Combined-gene-level-taxonomy']) 
+        GT_UNFILTERED_HEATMAP(unfilt_gene_taxonomy_heatmap_meta, GT_ASSEMBLY_TABLE.out.table, metadata)
+        // Filtered - filter out species less than 1000 CPM across samples
+        filt_gene_taxonomy_meta = Channel.of([mode: 'values_sum', filter_threshold : 1000,
+                            output_file: "Filter-Combined-gene-level-taxonomy${params.assay_suffix}.tsv"])
+        GT_FILTER_RARE(filt_gene_taxonomy_meta, GT_ASSEMBLY_TABLE.out.table)
+        filt_gene_taxonomy_heatmap_meta = Channel.of([group: "group", samples: 'sample_id',
+                                             prefix:  'Filter-Combined-gene-level-taxonomy'])
+        GT_FILTERED_HEATMAP(filt_gene_taxonomy_heatmap_meta, GT_FILTER_RARE.out.table, metadata)
+        // Decontaminate with decontam
+        decontam_gene_taxonomy_meta = Channel.of([feature: 'species', samples: 'sample_id',
+                                   prevalence: 'sample_or_ntc', frequency: 'concentration',
+                                   decontam_threshold: 0.5, method: 'gene-taxonomy',
+                                   ntc_name: 'ntc_sample'])
+
+        GT_DECONTAM(decontam_gene_taxonomy_meta, metadata, GT_FILTER_RARE.out.table)
+        decontam_gene_taxonomy_heatmap_meta = Channel.of([group: "group", samples: 'sample_id',
+                                                  prefix:  'Decontam-Combined-gene-level-taxonomy'])        
+        GT_DECONTAM_HEATMAP(decontam_gene_taxonomy_heatmap_meta, GT_FILTER_RARE.out.table, metadata)
+
+       // ---------------------- Gene functions
+       gene_function_ch = Channel.of(['KO', 'Gene'])
+       // Unfiltered
+       GF_ASSEMBLY_TABLE(gene_function_ch, MAKE_COMBINED_GENE_LEVEL_TABLES.out.norm_function_coverages,
+                         SUMMARIZE_ASSEMBLIES.out.summary)
+       unfilt_gene_function_heatmap_meta = Channel.of([group: "group", samples: 'sample_id',
+                                        prefix:  'NoFilter-Combined-gene-level-KO'])
+       GF_UNFILTERED_HEATMAP(unfilt_gene_function_heatmap_meta, GF_ASSEMBLY_TABLE.out.table, metadata)
+
+       // Filtered - filter out KO_ID less than 1000 CPM across samples
+       filt_gene_function_meta = Channel.of([mode: 'values_sum', filter_threshold : 1000,
+                            output_file: "Filter-Combined-gene-level-KO${params.assay_suffix}.tsv"])
+       GF_FILTER_RARE(filt_gene_function_meta, GF_ASSEMBLY_TABLE.out.table)
+       filt_gene_function_heatmap_meta = Channel.of([group: "group", samples: 'sample_id',
+                                             prefix:  'Filter-Combined-gene-level-KO'])
+       GF_FILTERED_HEATMAP(filt_gene_function_heatmap_meta, GF_FILTER_RARE.out.table, metadata)
+       // Decontaminate with decontam
+       decontam_gene_function_meta = Channel.of([feature: 'KO_ID', samples: 'sample_id',
+                                   prevalence: 'sample_or_ntc', frequency: 'concentration',
+                                   decontam_threshold: 0.5, method: 'gene-function',
+                                   ntc_name: 'ntc_sample']) 
+       GF_DECONTAM(decontam_gene_function_meta, metadata, GF_FILTER_RARE.out.table)
+       decontam_gene_function_heatmap_meta = Channel.of([group: "group", samples: 'sample_id',
+                                                  prefix:  'Decontam-Combined-gene-level-KO'])
+       GF_DECONTAM_HEATMAP(decontam_gene_function_heatmap_meta, GF_FILTER_RARE.out.table, metadata)
+
+   
         combined_cov_ch = COMBINE_CONTIG_TAX_AND_COVERAGE(coverage_ch
                                                             .join(taxonomy_ch)
                                                             .join(genes_ch)
                                                             .join(assembly_ch))
 
+        // ------------------------ Contig taxonomy
         MAKE_COMBINED_CONTIG_TAX_TABLES(combined_cov_ch.map{
                                                sample_id, coverage -> file("${coverage}")
                                                }.collect())
+
+       // Unfiltered
+       contig_ch = Channel.of(['taxonomy', 'Contig'])
+       CONTIG_ASSEMBLY_TABLE(contig_ch, MAKE_COMBINED_CONTIG_TAX_TABLES.out.norm_taxonomy, SUMMARIZE_ASSEMBLIES.out.summary)
+       unfilt_contig_heatmap_meta = Channel.of([group: "group", samples: 'sample_id', 
+                                        prefix:  'NoFilter-Combined-contig-level-taxonomy'])
+       CONTIG_UNFILTERED_HEATMAP(unfilt_contig_heatmap_meta, CONTIG_ASSEMBLY_TABLE.out.table, metadata)
+       // Filtered - filter at 1000 CPM
+       filt_contig_meta = Channel.of([mode: 'values_sum', filter_threshold : 1000, 
+                            output_file: "Filter-Combined-contig-level-taxonomy${params.assay_suffix}.tsv"])
+       CONTIG_FILTER_RARE(filt_contig_meta, CONTIG_ASSEMBLY_TABLE.out.table)
+       filt_contig_heatmap_meta = Channel.of([group: "group", samples: 'sample_id',
+                                             prefix:  'Filter-Combined-contig-level-taxonomy'])
+       CONTIG_FILTERED_HEATMAP(filt_contig_heatmap_meta, CONTIG_FILTER_RARE.out.table, metadata)
+       // Decontaminated - using decontam threshold of 0.5 sice it was more likely to detect contaminats than 0.1.
+       decontam_contig_meta = Channel.of([feature: 'species', samples: 'sample_id',
+                                   prevalence: 'sample_or_ntc', frequency: 'concentration',
+                                   decontam_threshold: 0.5, method: 'contig-taxonomy', 
+                                   ntc_name: 'ntc_sample'])
+       CONTIG_DECONTAM(decontam_contig_meta, metadata, CONTIG_FILTER_RARE.out.table)
+       decontam_contig_heatmap_meta = Channel.of([group: "group", samples: 'sample_id', 
+                                                  prefix:  'Decontam-Combined-contig-level-taxonomy'])
+       CONTIG_DECONTAM_HEATMAP(decontam_contig_heatmap_meta, CONTIG_DECONTAM.out.table, metadata)
+
 
         // Assembly binning
         METABAT_BINNING(assembly_ch.join(read_mapping_ch))
@@ -203,7 +300,9 @@ workflow assembly_based {
                                                     bins_ch,
                                                     bam_files)
    
-        // Capture software versions 
+        // Capture software versions
+        CONTIG_DECONTAM.out.version | mix(software_versions_ch) | set{software_versions_ch}
+        CONTIG_DECONTAM_HEATMAP.out.version | mix(software_versions_ch) | set{software_versions_ch} 
         RENAME_HEADERS.out.version | mix(software_versions_ch) | set{software_versions_ch}
         SUMMARIZE_ASSEMBLIES.out.version | mix(software_versions_ch) | set{software_versions_ch}
         SAM_TO_BAM.out.version | mix(software_versions_ch) | set{software_versions_ch}

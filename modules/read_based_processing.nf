@@ -9,12 +9,24 @@ nextflow.enable.dsl = 2
 // Make Kraken, Kaiju and Humann3 databases
 include { SETUP_KAIJU; SETUP_KRAKEN; make_humann_db } from "./database_creation.nf"
 
+// Metaphlan
 include { METAPHLAN2KRONA; KRONA_REPORT as METAPHLAN_REPORT } from "./visualize_taxonomy.nf"
+include { METAPHLAN2COUNT; BARPLOT as METAPHLAN_UNFILTERED_BARPLOT } from "./downstream_analysis.nf"
+include { FILTER_RARE as METAPHLAN_FILTER_RARE; BARPLOT as METAPHLAN_FILTERED_BARPLOT } from "./downstream_analysis.nf"
+include { DECONTAM as METAPHLAN_DECONTAM; BARPLOT as METAPHLAN_DECONTAM_BARPLOT } from "./downstream_analysis.nf"
+// Kraken2
 include { KRAKEN_CLASSIFY; KRAKEN2TABLE } from "./assign_taxonomy.nf"
+include { BARPLOT as KRAKEN_UNFILTERED_BARPLOT } from "./downstream_analysis.nf"
+include { FILTER_RARE as KRAKEN_FILTER_RARE; BARPLOT as KRAKEN_FILTERED_BARPLOT } from "./downstream_analysis.nf"
+include { DECONTAM as KRAKEN_DECONTAM; BARPLOT as KRAKEN_DECONTAM_BARPLOT } from "./downstream_analysis.nf"
+// Kaiju
 include { KAIJU_CLASSIFY; KAIJU2TABLE } from "./assign_taxonomy.nf"
+include { KAIJU2SPECIES_TABLE; BARPLOT as KAIJU_UNFILTERED_BARPLOT } from "./downstream_analysis.nf"
+include { FILTER_RARE as KAIJU_FILTER_RARE; BARPLOT as KAIJU_FILTERED_BARPLOT } from "./downstream_analysis.nf"
+include { DECONTAM as KAIJU_DECONTAM; BARPLOT as KAIJU_DECONTAM_BARPLOT } from "./downstream_analysis.nf"
+// Krona plots
 include { KRONA_REPORT as KRAKEN_REPORT } from "./visualize_taxonomy.nf"
 include { KRAKEN2KRONA; KAIJU2KRONA } from "./visualize_taxonomy.nf"
-
 include { KRONA_REPORT as KAIJU_REPORT } from "./visualize_taxonomy.nf"
 
 /*
@@ -257,6 +269,8 @@ process COMBINE_READ_BASED_PROCESSING_TAXONOMY {
 workflow read_based {
 
     take:
+        reads_per_sample
+        metadata
         filtered_reads
         krakendb_dir
         kaijudb_dir
@@ -268,7 +282,9 @@ workflow read_based {
     main:
         
         software_versions_ch = Channel.empty()
-        // Kraken
+
+        
+        // ------------------------ Kraken
         if(krakendb_dir){
             KRAKEN_CLASSIFY(krakendb_dir, filtered_reads)
         }else{
@@ -279,9 +295,36 @@ workflow read_based {
         kraken_reports = KRAKEN_CLASSIFY.out.report.map{sample_id, report -> report}.collect()
         KRAKEN2TABLE(kraken_reports)
         KRAKEN2KRONA(KRAKEN_CLASSIFY.out.report)
-        KRAKEN_REPORT("kraken", KRAKEN2KRONA.out.krona.collect())
+        // Unfiltered
+        unfilt_kraken_barplot_meta = Channel.of([group: "group",
+                               feature: 'Species',
+                               samples: 'sample_id',
+                               prefix:  'kraken2_NoFilter_species'])
+        KRAKEN_UNFILTERED_BARPLOT(unfilt_kraken_barplot_meta, KRAKEN2TABLE.out.table, metadata)
+        // Filtered - drop species with relative abundance less than 0.5% across samples
+        filt_kraken_meta = Channel.of([mode: 'across_samples', filter_threshold : 0.5,
+                            output_file: "kraken2_Filtered_taxon_counts${params.assay_suffix}.tsv"])
+        KRAKEN_FILTER_RARE(filt_kraken_meta, KRAKEN2TABLE.out.table)
+        filt_kraken_barplot_meta = Channel.of([group: "group",
+                               feature: 'Species',
+                               samples: 'sample_id',
+                               prefix:  'kraken2_Filter_species'])
+        KRAKEN_FILTERED_BARPLOT(filt_kraken_barplot_meta, KRAKEN_FILTER_RARE.out.table, metadata)
+        // Decontaminate with decontam
+        decontam_kraken_meta = Channel.of([feature: 'Species', samples: 'sample_id',
+                                   prevalence: 'sample_or_ntc', frequency: 'concentration',
+                                   decontam_threshold: 0.5, method: 'kraken2',
+                                   ntc_name: 'ntc_sample'])
+        KRAKEN_DECONTAM(decontam_kraken_meta, metadata, KRAKEN_FILTER_RARE.out.table)
+        decontam_kraken_barplot_meta = Channel.of([group: "group",
+                               feature: 'Species',
+                               samples: 'sample_id',
+                               prefix:  'kraken2_decontam_species'])
+        KRAKEN_DECONTAM_BARPLOT(decontam_kraken_barplot_meta, KRAKEN_DECONTAM.out.table, metadata)
 
-        // Kaiju
+        KRAKEN_REPORT("kraken2", KRAKEN2KRONA.out.krona.collect())
+
+        // -------------------- Kaiju
         if(kaijudb_dir){
            KAIJU_CLASSIFY(kaijudb_dir, filtered_reads)
         }else{
@@ -293,6 +336,35 @@ workflow read_based {
         KAIJU2TABLE(params.kaijudb_dir, "species", kaiju_reports)
         KAIJU2KRONA(params.kaijudb_dir, KAIJU_CLASSIFY.out.report)
         KAIJU_REPORT("kaiju", KAIJU2KRONA.out.krona.collect())
+        // Unfiltered
+        KAIJU2SPECIES_TABLE(KAIJU2TABLE.out.table)
+        unfilt_kaiju_barplot_meta = Channel.of([group: "group",
+                               feature: 'Species',
+                               samples: 'sample_id',
+                               prefix:  'kaiju_NoFilter_species'])
+        KAIJU_UNFILTERED_BARPLOT(unfilt_kaiju_barplot_meta, KAIJU2SPECIES_TABLE.out.table, metadata)
+        // Filtered - drop species with relative abundance less than 0.5% across samples
+        filt_kaiju_meta = Channel.of([mode: 'across_samples', filter_threshold : 0.5,
+                            output_file: "kaiju_Filtered_taxon_counts${params.assay_suffix}.tsv"])
+        KAIJU_FILTER_RARE(filt_kaiju_meta, KAIJU2SPECIES_TABLE.out.table)
+        filt_kaiju_barplot_meta = Channel.of([group: "group",
+                               feature: 'Species',
+                               samples: 'sample_id',
+                               prefix:  'kaiju_Filter_species'])
+        KAIJU_FILTERED_BARPLOT(filt_kaiju_barplot_meta, KAIJU_FILTER_RARE.out.table, metadata)
+        // Decontaminate with decontam
+        decontam_kaiju_meta = Channel.of([feature: 'Species', samples: 'sample_id',
+                                   prevalence: 'sample_or_ntc', frequency: 'concentration',
+                                   decontam_threshold: 0.5, method: 'kaiju',
+                                   ntc_name: 'ntc_sample'])
+        KAIJU_DECONTAM(decontam_kaiju_meta, metadata, KAIJU_FILTER_RARE.out.table)
+        decontam_kaiju_barplot_meta = Channel.of([group: "group",
+                               feature: 'Species',
+                               samples: 'sample_id',
+                               prefix:  'kaiju_decontam_species'])
+        KAIJU_DECONTAM_BARPLOT(decontam_kaiju_barplot_meta, KAIJU_DECONTAM.out.table, metadata)
+
+
 
         // Humann
         if(chocophlan_dir && uniref_dir && metaphlan_dir && utilities_dir){
@@ -303,9 +375,40 @@ workflow read_based {
                    make_humann_db.out.uniref_dir,
                    make_humann_db.out.metaphlan_db_dir) 
             make_humann_db.out.versions | mix(software_versions_ch) | set{software_versions_ch} 
-        }
+        } 
+
+       // ------------------- Metaphlan
         METAPHLAN2KRONA(HUMANN.out.metaphlan_bugs_list)
         METAPHLAN_REPORT("metaphlan", METAPHLAN2KRONA.out.krona.collect())
+
+        // Unfiltered
+        // Create raw table
+        METAPHLAN2COUNT(HUMANN.out.metaphlan_bugs_list, reads_per_sample)
+        unfilt_metaphlan_barplot_meta = Channel.of([group: "group",
+                               feature: 'Species',
+                               samples: 'sample_id',
+                               prefix:  'metaplan_NoFilter_species'])
+        METAPHLAN_UNFILTERED_BARPLOT(unfilt_metaphlan_barplot_meta, METAPHLAN2COUNT.out.table, metadata)
+        // Filtered - drop species with relative abundance less than 0.5% across samples
+        filt_metaphlan_meta = Channel.of([mode: 'across_samples', filter_threshold : 0.5,
+                            output_file: "metaphlan_Filtered_taxon_counts${params.assay_suffix}.tsv"])
+        METAPHLAN_FILTER_RARE(filt_metaphlan_meta, METAPHLAN2COUNT.out.table)
+        filt_metaphlan_barplot_meta = Channel.of([group: "group",
+                               feature: 'Species',
+                               samples: 'sample_id',
+                               prefix:  'metaplan_Filter_species'])
+        METAPHLAN_FILTERED_BARPLOT(filt_metaphlan_barplot_meta, METAPHLAN_FILTER_RARE.out.table, metadata)
+        // Decontaminate with decontam
+        decontam_metaphlan_meta = Channel.of([feature: 'Species', samples: 'sample_id',
+                                   prevalence: 'sample_or_ntc', frequency: 'concentration',
+                                   decontam_threshold: 0.5, method: 'metaphlan',
+                                   ntc_name: 'ntc_sample'])
+        METAPHLAN_DECONTAM(decontam_metaphlan_meta, metadata, METAPHLAN_FILTER_RARE.out.table)
+        decontam_metaphlan_barplot_meta = Channel.of([group: "group",
+                               feature: 'Species',
+                               samples: 'sample_id',
+                               prefix:  'metaplan_decontam_species'])
+        METAPHLAN_DECONTAM_BARPLOT(decontam_metaphlan_barplot_meta, METAPHLAN_DECONTAM.out.table, metadata)
 
         gene_families_ch = HUMANN.out.genefamilies.collect()
         pathabundance_ch = HUMANN.out.pathabundance.collect()
@@ -331,7 +434,8 @@ workflow read_based {
         COMBINE_READ_BASED_PROCESSING_TAXONOMY(metaphlan_bugs_list_ch)
         taxonomy_ch = COMBINE_READ_BASED_PROCESSING_TAXONOMY.out.taxonomy
 
-        
+        KAIJU_DECONTAM.out.version | mix(software_versions_ch) | set{software_versions_ch}
+        KAIJU_DECONTAM_BARPLOT.out.version | mix(software_versions_ch) | set{software_versions_ch} 
         KRAKEN_CLASSIFY.out.version | mix(software_versions_ch) | set{software_versions_ch}
         KRAKEN2TABLE.out.version | mix(software_versions_ch) | set{software_versions_ch}
         KRAKEN2KRONA.out.version | mix(software_versions_ch) | set{software_versions_ch}

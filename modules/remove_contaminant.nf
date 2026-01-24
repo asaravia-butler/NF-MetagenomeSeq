@@ -191,7 +191,7 @@ process REMOVE_CONTAMINANT {
         tuple val(sample_id), path(reads), val(isPaired)
 
     output:
-        tuple val(sample_id), path("*_blank_removed*.fastq.gz"), val(isPaired), emit: reads
+        tuple val(sample_id), path("*_decontam*.fastq.gz"), val(isPaired), emit: reads
         tuple val(sample_id), path("${sample_id}-mapping-info.txt"), emit: info
         path("versions.txt"), emit: version
 
@@ -205,16 +205,16 @@ process REMOVE_CONTAMINANT {
         [ -z "\${INDEX}" ] && echo "Bowtie2 index files not found" 1>&2 && exit 1
 
         bowtie2 -p ${task.cpus} -x \${INDEX} --very-sensitive-local \\
-               ${input} ${sample_id}_blank_removed.fastq.gz \\
+               ${input} ${sample_id}_decontam.fastq.gz \\
                > ${sample_id}.sam 2> ${sample_id}-mapping-info.txt 
 
         # Rename Fastq Files
-        if [ -f ${sample_id}_blank_removed.fastq.1.gz ]; then
-            mv ${sample_id}_blank_removed.fastq.1.gz ${sample_id}_blank_removed_R1.fastq.gz
+        if [ -f ${sample_id}_decontam.fastq.1.gz ]; then
+            mv ${sample_id}_decontam.fastq.1.gz ${sample_id}_decontam_R1.fastq.gz
         fi
 
-        if [ -f ${sample_id}_blank_removed.fastq.2.gz ]; then
-            mv ${sample_id}_blank_removed.fastq.2.gz ${sample_id}_blank_removed_R2.fastq.gz
+        if [ -f ${sample_id}_decontam.fastq.2.gz ]; then
+            mv ${sample_id}_decontam.fastq.2.gz ${sample_id}_decontam_R2.fastq.gz
         fi
 
 
@@ -377,7 +377,7 @@ workflow nano_remove_contaminants {
 
         // Remove unmapped reads/contaminants using samtools fastq
         bam_ch.map{ sample_id, bam, bai -> 
-                         tuple([sample_id: sample_id, suffix: '_blank_removed', isPaired: 'false'],
+                         tuple([sample_id: sample_id, suffix: '_decontam', isPaired: 'false'],
                                 bam, bai)  
                   }.set{mod_bam_ch}
 
@@ -391,7 +391,7 @@ workflow nano_remove_contaminants {
        - Remove unmapped reads/contaminants using samtools fastq
        */
        MAPPING_TO_CONTAMINANT.out.sam.map{ sample_id, sam, mapping_info ->
-                         tuple([sample_id: sample_id, suffix: '_blank_removed', isPaired: 'false'],
+                         tuple([sample_id: sample_id, suffix: '_decontam', isPaired: 'false'],
                                 sam, mapping_info)
                   }.set{mod_sam_ch}
 

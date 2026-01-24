@@ -44,6 +44,7 @@ process NANOPLOT {
     beforeScript "chmod +x ${projectDir}/bin/*"
 
     input:
+        each val(prefix)
         tuple val(sample_id), path(reads), val(isPaired)
 
     output:
@@ -53,7 +54,7 @@ process NANOPLOT {
     script:
     """
     NanoPlot \\
-        --prefix ${sample_id}_ \\
+        --prefix ${sample_id}_${prefix} \\
         -t ${task.cpus} \\
         --fastq ${reads[0]} \\
         -o .
@@ -75,6 +76,7 @@ process MULTIQC {
     path(files)
   output:
     path("${params.additional_filename_prefix}${prefix}_multiqc${params.assay_suffix}_report.zip"), emit: report
+    path("${params.additional_filename_prefix}${prefix}_reads_per_sample.tsv"), emit: reads_per_sample
     path("versions.txt"), emit: version
   script:
     """
@@ -83,6 +85,10 @@ process MULTIQC {
               --interactive --config ${multiqc_config} \\
               --outdir ${params.additional_filename_prefix}${prefix}_multiqc_report  ${files} > /dev/null 2>&1
 
+      FILENAME=`find  -type f -name multiqc_general_stats.txt`
+      # Write out the number of reads per sample to file
+      awk 'BEGIN{print "Sample_ID\\tReads"} NR>1{printf "%s\\t%s\\n", \$1,\$NF }' \${FILENAME} \\
+           > ${params.additional_filename_prefix}${prefix}_reads_per_sample.tsv
             
       # zipping and removing unzipped dir
       zip -q -r \\
@@ -265,7 +271,7 @@ workflow nano_quality_check {
 
 
     main:
-        NANOPLOT(reads_ch)
+        NANOPLOT(prefix_ch,reads_ch)
         reads = reads_ch.map{ sample_id, reads, paired -> reads}
         logs = logs_ch.map{ sample_id, log -> log}.flatten()
         nanoplot_ch = NANOPLOT.out.html.flatten()
@@ -280,6 +286,7 @@ workflow nano_quality_check {
         MULTIQC.out.version | mix(software_versions_ch) | set{software_versions_ch}
 
     emit:
+        reads_per_sample = MULTIQC.out.reads_per_sample
         versions = software_versions_ch
 }
 
@@ -303,6 +310,7 @@ workflow quality_check {
         MULTIQC.out.version | mix(software_versions_ch) | set{software_versions_ch}
 
     emit:
+        reads_per_sample = MULTIQC.out.reads_per_sample 
         versions = software_versions_ch
 }
 

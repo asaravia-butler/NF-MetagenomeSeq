@@ -51,7 +51,7 @@ opt_parser <- OptionParser(
   description = paste("Author: Olabiyi Aderemi Obayomi",
                       "\nEmail: olabiyi.a.obayomi@nasa.gov",
                       "\n  A script to convert a raw kaiju table into a conventional species table.",
-                      "\nIt outputs a conventional species table.",
+                      "\nIt outputs a conventional tab separated species table.",
                       sep="")
 )
 
@@ -143,11 +143,6 @@ process_kaiju_table <- function(file_path, taxon_col="taxon_name") {
 }
 
 
-
-
-
-
-
 table_path <- opt[["merged-table"]]
 prefix <- opt[["output-prefix"]]
 suffix <- opt[["assay-suffix"]]
@@ -157,7 +152,7 @@ table2write <- feature_table  %>%
   as.data.frame() %>%
   rownames_to_column("Species")
 
-write_csv(x = table2write, file = glue("{prefix}kaiju_species_table{suffix}.csv"))
+write_tsv(x = table2write, file = glue("{prefix}kaiju_species_table{suffix}.tsv"))
 
 
 

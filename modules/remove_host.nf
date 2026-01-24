@@ -96,12 +96,13 @@ process REMOVE_HOST {
     label "kraken2"
 
     input:
+        val(host_suffix)
         each path(HOST_DB)
         tuple val(sample_id), path(reads), val(isPaired)
 
     output:
-        tuple val(sample_id), path("*_host_removed.fastq.gz"), val(isPaired), emit: reads
-        tuple val(sample_id), path("*-kraken2-report.tsv"), emit: report
+        tuple val(sample_id), path("*_${host_suffix}.fastq.gz"), val(isPaired), emit: reads
+        tuple val(sample_id), path("*-kraken2-report_${host_suffix}.tsv"), emit: report
         path("versions.txt"), emit: version
 
     script:
@@ -111,29 +112,29 @@ process REMOVE_HOST {
         kraken2 --db ${HOST_DB} --gzip-compressed \\
             --threads ${task.cpus} \\
             --use-names --paired \\
-            --output ${sample_id}-kraken2-output.txt \\
-            --report ${sample_id}-kraken2-report.tsv \\
+            --output ${sample_id}-kraken2-output_${host_suffix}.txt \\
+            --report ${sample_id}-kraken2-report_${host_suffix}.tsv \\
             --unclassified-out ${sample_id}_R#.fastq ${reads[0]} ${reads[1]}
 
         # Rename and gzip output files
-        mv  ${sample_id}_R_1.fastq ${sample_id}_R1_host_removed.fastq && \\
-        gzip ${sample_id}_R1_host_removed.fastq
+        mv  ${sample_id}_R_1.fastq ${sample_id}_R1_${host_suffix}.fastq && \\
+        gzip ${sample_id}_R1_${host_suffix}.fastq
 
-        mv  ${sample_id}_R_2.fastq ${sample_id}_R2_host_removed.fastq && \\
-        gzip ${sample_id}_R2_host_removed.fastq
+        mv  ${sample_id}_R_2.fastq ${sample_id}_R2_${host_suffix}.fastq && \\
+        gzip ${sample_id}_R2_${host_suffix}.fastq
 
     else
 
         # Single end
         kraken2 --db ${HOST_DB} --gzip-compressed \\
             --threads ${task.cpus} --use-names \\
-            --output ${sample_id}-kraken2-output.txt \\
-            --report ${sample_id}-kraken2-report.tsv \\
+            --output ${sample_id}-kraken2-output_${host_suffix}.txt \\
+            --report ${sample_id}-kraken2-report_${host_suffix}.tsv \\
             --unclassified-out ${sample_id}.fastq ${reads[0]}
 
 	# Rename and gzip output file	 
-        mv ${sample_id}.fastq ${sample_id}_host_removed.fastq && \\
-        gzip ${sample_id}_host_removed.fastq
+        mv ${sample_id}.fastq ${sample_id}_${host_suffix}.fastq && \\
+        gzip ${sample_id}_${host_suffix}.fastq
 
     fi
 
@@ -148,6 +149,7 @@ process REMOVE_HOST {
 workflow remove_host {
 
     take:
+       host_suffix // "HostRM", "HRrm"
        host_name
        host_url
        host_fasta
@@ -174,7 +176,7 @@ workflow remove_host {
            BUILD_HOSTDB.out.version | mix(software_versions_ch) | set{software_versions_ch}
        }
 
-       REMOVE_HOST(host_db, reads_ch)
+       REMOVE_HOST(host_suffix, host_db, reads_ch)
 
        // Collect software versions
        REMOVE_HOST.out.version | mix(software_versions_ch) | set{software_versions_ch}

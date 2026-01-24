@@ -5,7 +5,7 @@
 <br>
 
 <p align="center">
-<a href="images/GL-amplicon-subwayplot.pdf"><img src="images/GL-amplicon-subwayplot.png"></a>
+<a href="images/GL-metagenomics-subwayplot.pdf"><img src="images/GL-metagenomics-subwayplot.png"></a>
 </p>
 
 <br>
@@ -150,9 +150,7 @@ nextflow run low_biomass_nanopore.nf --help
 ##### 4ai. Approach 1: Start with pod5 or fast5 files as input
 
 ```bash
-bash ./launch.sh processing \
-   low_biomass_nanopore.nf \
-   '--input_file input_dir_barcodes.csv --errorStrategy "ignore" '
+nextflow run low_biomass_nanopore.nf -resume -profile singularity --input_file input_dir_barcodes.csv  --input_dir /path/to/pod5/directory/  --kit_name "SQK-RPB114-24" --isFast5 false --errorStrategy "ignore"
 ```
 
 <br>
@@ -160,9 +158,7 @@ bash ./launch.sh processing \
 ##### 4aii. Approach 2: Start with multiple FASTQ files per sample as input
 
 ```bash
-bash ./launch.sh processing \
-   low_biomass_nanopore.nf \
-   '--input_file multiple.csv --errorStrategy "ignore" '
+nextflow run low_biomass_nanopore.nf -resume -profile singularity --input_file multiple.csv --errorStrategy "ignore"
 ```
 
 <br>
@@ -170,22 +166,30 @@ bash ./launch.sh processing \
 ##### 4aiii. Approach 3: Start with one FASTQ file per sample as input
 
 ```bash
-bash ./launch.sh processing \
-   low_biomass_nanopore.nf \
-   '--input_file single.csv --errorStrategy "ignore" '
+nextflow run low_biomass_nanopore.nf -resume -profile singularity --input_file single.csv --errorStrategy "ignore"
 ```
 
 <br>
 
 **Required Parameters For All Long Read Approaches:**
 
-* `./launch.sh` - Positional argument specifying the bash file that contains the nextflow command to execute. If running in a directory other than `NF-MetagenomeSeq`, replace with the full path to the launch.sh script.
-* `processing` - Positional argument specifying the run mode, `processing` refers to the mode used to process the input data using the respective GeneLab pipeline.
+* `-resume` - Resumes  workflow execution using previously cached results
+* `-profile` – Specifies the configuration profile(s) to load (multiple options can be provided as a comma-separated list)
+   * Software environment profile options (choose one):
+      * `singularity` - instructs Nextflow to use Singularity container environments
+      * `docker` - instructs Nextflow to use Docker container environments
+      * `conda` - instructs Nextflow to use conda environments via the conda package manager
+        > *Note: By default, Nextflow will create environments at runtime using the yaml files in the [envs](envs/) folder. You can change this behavior by using the `--conda_*` workflow parameters or by editing the [nextflow.config](nextflow.config) file to specify a centralized conda environments directory via the `conda.cacheDir` parameter.*
+      * `mamba` - instructs Nextflow to use conda environments via the mamba package manager 
+   * Other option (can be combined with the software environment option above using a comma, e.g. `-profile slurm,singularity`):
+      * `slurm` - instructs Nextflow to use the [Slurm cluster management and job scheduling system](https://slurm.schedmd.com/overview.html) to schedule and run the jobs on a Slurm HPC cluster
 * `low_biomass_nanopore.nf` - Instructs Nextflow to run the Genelab Low Biomass Long Read (Nanopore) workflow. If running in a directory other than `NF-MetagenomeSeq`, replace with the full path to the low_biomass_nanopore.nf workflow file.
-* `'--input_file *.csv --errorStrategy "ignore" '` - Positional argument specifying a set of parameters to pass into the nextflow run command.
-  * `--errorStrategy "ignore"` - Instructions nextflow to continue processing the dataset even if an error is encountered.
-  * `--input_file *.csv` - Specifies the input csv file containing required metadata about the samples including barcode information and paths to the input file(s) for each sample.
-  * > *Note: This input files requires specifc formatting to be interpreted correctly. Please see the [runsheet documentation](examples/runsheet) in this repository for examples on how to format this file type for each approach.
+* `--input_dir` - Specifies the path to a directory containing pod5 or fast5 files generated after nanopore sequencing
+* `--kit_name` - Specifies the Oxford nanopore sequencing kit used
+* `--isFast5`  - are the files in the `--input_dir` fast5 files? Set to true or false if the files are fast5 or pod5 files, respectively. 
+* `--errorStrategy "ignore"` - Instructions nextflow to continue processing the dataset even if an error is encountered.
+* `--input_file *.csv` - Specifies the input csv file containing required metadata about the samples including barcode information and paths to the input file(s) for each sample.
+* > *Note: These input files require specific formatting to be interpreted correctly. Please see the [runsheet documentation](examples/runsheet) in this repository for examples on how to format this file type for each approach.
 
 <br>
 
@@ -202,9 +206,7 @@ nextflow run low_biomass_illumina.nf --help
 ##### 4bi. Approach 1: Start with paired-end FASTQ files as input
 
 ```bash
-bash ./launch.sh processing \
-   low_biomass_illumina.nf \
-   '--input_file PE_file.csv --errorStrategy "ignore" --technology "illumina" '
+nextflow run low_biomass_illumina.nf -resume -profile singularity  --input_file PE_file.csv --errorStrategy "ignore" --technology "illumina"
 ```
 
 <br>
@@ -212,44 +214,116 @@ bash ./launch.sh processing \
 ##### 4bii. Approach 2: Start with single-end FASTQ files as input
 
 ```bash
-bash ./launch.sh processing \
-   low_biomass_illumina.nf \
-   '--input_file SE_file.csv --errorStrategy "ignore" --technology "illumina" '
+nextflow run low_biomass_illumina.nf  -resume -profile singularity --input_file SE_file.csv --errorStrategy "ignore" --technology "illumina"
 ```
 
 <br>
 
 **Required Parameters For All Short Read Approaches:**
 
-* `./launch.sh` - Positional argument specifying the bash file that contains the nextflow command to execute. If running in a directory other than `NF-MetagenomeSeq`, replace with the full path to the launch.sh script.
-* `processing` - Positional argument specifying the run mode, `processing` refers to the mode used to process the input data using the respective GeneLab pipeline.
+* `-resume` - Resumes  workflow execution using previously cached results
+* `-profile` – Specifies the configuration profile(s) to load (multiple options can be provided as a comma-separated list)
+   * Software environment profile options (choose one):
+      * `singularity` - instructs Nextflow to use Singularity container environments
+      * `docker` - instructs Nextflow to use Docker container environments
+      * `conda` - instructs Nextflow to use conda environments via the conda package manager
+        > *Note: By default, Nextflow will create environments at runtime using the yaml files in the [envs](envs/) folder. You can change this behavior by using the `--conda_*` workflow parameters or by editing the [nextflow.config](nextflow.config) file to specify a centralized conda environments directory via the `conda.cacheDir` parameter.*
+      * `mamba` - instructs Nextflow to use conda environments via the mamba package manager 
+   * Other option (can be combined with the software environment option above using a comma, e.g. `-profile slurm,singularity`):
+      * `slurm` - instructs Nextflow to use the [Slurm cluster management and job scheduling system](https://slurm.schedmd.com/overview.html) to schedule and run the jobs on a Slurm HPC cluster
 * `low_biomass_illumina.nf` - Instructs Nextflow to run the Genelab Low Biomass Short Read (Illumina) workflow. If running in a directory other than `NF-MetagenomeSeq`, replace with the full path to the low_biomass_illumina.nf workflow file.
-* `'--input_file *.csv --errorStrategy "ignore" --technology "illumina" '` - Positional argument specifying a set of parameters to pass into the nextflow run command.
-  * `--errorStrategy "ignore"` - Instructions nextflow to continue processing the dataset even if an error is encountered.
-  * `--technology "illumina"` - Specifies the technology type used to generate the sequencing data.
-  * `--input_file *.csv` - Specifies the input csv file containing required metadata about the samples including paths to the input file(s) for each sample.
-  * > *Note: This input files requires specifc formatting to be interpreted correctly. Please see the [runsheet documentation](examples/runsheet) in this repository for examples on how to format this file type for each approach.
+* `--errorStrategy "ignore"` - Instructs Nextflow to continue processing the dataset even if an error is encountered.
+* `--technology "illumina"` - Specifies the technology type used to generate the sequencing data.
+* `--input_file *.csv` - Specifies the input csv file containing required metadata about the samples including paths to the input file(s) for each sample.
+  * > *Note: These input files require specific formatting to be interpreted correctly. Please see the [runsheet documentation](examples/runsheet) in this repository for examples on how to format this file type for each approach.
 
 <br>
 
 **Additional [Optional] Parameters For All Approaches For Both Long- and Short-Read**
 > *Note: See `nextflow run -h` and [Nextflow's CLI run command documentation](https://nextflow.io/docs/latest/cli.html#run) for more options and details on how to run Nextflow.*
+* `--assay_suffix ` – Specifies the suffix to add to each output file.
+* `--workflow` Specifies that workflow to be run. Options are one of [read-based, assembly-based, both]. Default: both.
+* `--publishDir_mode` Specifies how nextflow handles output file publishing. Options can be found here https://www.nextflow.io/docs/latest/process.html#publishdir Default: link.
+* `--errorStrategy` Specifies how nextflow handles errors. Options can be found here https://www.nextflow.io/docs/latest/process.html#errorstrategy. Default: terminate.
+* `--swift_1S` Setting for trimming recommended when working with Swift 1S libraries.
+  adds `swift=t` setting to bbduk quality trimming/filtering command. For info on this, see example, https://swiftbiosci.com/wp-content/uploads/2019/03/16-0853-Tail-Trim-Final-442019.pdf.
+  Set to true if data was generated with Swift 1S library prep. Default: false.
+* `--multiqc_config` Path to a custom multiqc config file. Default: config/multiqc.config.
+* `--use_gtdbtk_scratch_location` Should a scratch location be used to store GTDBTK temp files? true or false. Scratch directory for gtdb-tk, if wanting to use disk space instead of RAM, can be memory intensive;
+  see https://ecogenomics.github.io/GTDBTk/faq.html#gtdb-tk-reaches-the-memory-limit-pplacer-crashes leave empty if wanting to use memory, the default, put in quotes the path to a directory that
+  already exists if wanting to use disk space. Default: false.
+**MAG parameters:** MAG filtering cutoffs based on checkm quality assessments (in percent); see https://github.com/Ecogenomics/CheckM/wiki/Reported-Statistics.
+* `--min_est_comp` Minimum estimated completion. Default: 90.
+* `--max_est_redund` Minimum estimated redundancy. Default: 10.
+* `--max_est_strain_het` Minimum estimated strain heterogeneity. Default: 50.
+* `--reduced_tree` reduced_tree option for checkm, limits the RAM usage to 16GB; https://github.com/Ecogenomics/CheckM/wiki/Genome-Quality-Commands#tree.
+  'True' for yes, anything else will be considered 'False' and the default full tree will be used. Default: 'True'.
+* `--max_mem` Maximum memory allowed, passed to megahit assembler. Can be set either by proportion of available on system, e.g. 0.5
+   or by absolute value in bytes, e.g. 100e9 would be 100 GB. Default: 100e9.
 
-* `'-profile'` – Specifies the configuration profile(s) to load (multiple options can be provided as a comma-separated list).
-   * Software environment profile options (choose one):
-      * `singularity` - instructs Nextflow to use Singularity container environments
-      * `docker` - instructs Nextflow to use Docker container environments
-      * `conda` - instructs Nextflow to use conda environments via the conda package manager
-        > *Note: By default, Nextflow will create environments at runtime using the `singularity` approach.*
-* `'--assay_suffix ""'` – Specifies the suffix to add to each output file.
+* `--pileup_mem` pileup.sh paramater for calculating contig coverage and depth. Memory used by bbmap's pileup.sh (within the GET_COV_AND_DET process).
+          passed as the -Xmx parameter, 20g means 20 gigs of RAM, 20m means 20 megabytes.
+          5g should be sufficient for most assemblies, but if that rule is failing, this may need to be increased.Default: '5g'
+* `--block_size` Block size variable for CAT/diamond, lower value means less RAM usage; see https://github.com/bbuchfink/diamond/wiki/3.-Command-line-options#memory--performance-options. Default: 4.
 
+**Paths to existing databases and database links.**
+* `--DB_ROOT`   FULL PATH to root directory where the databases will be downloaded if they don't exist. Relative paths such as '~/' and '../' will fail, please don't use them. Default: ../Reference_DBs/
+*CAT database directory strings: The strings below will be added to the end of the --database.cat_db path arguement provided below.*
+* `--cat_taxonomy_dir`  Path to CAT taxonomy database directory. Default: 2021-01-07_taxonomy/.
+*  `--cat_db_sub_dir`  Path to CAT database sub directory. Default: 2021-01-07_CAT_database/.
+*  `--CAT_DB_LINK`  CAT database online download link. Default: https://tbb.bio.uu.nl/bastiaan/CAT_prepare/CAT_prepare_20210107.tar.gz.
+*CAT database*
+* `--cat_db` Path to CAT database. Example, /path/to/Reference_DBs/CAT_prepare_20210107/. Default: null.
+*Humann database:*
+* `--metaphlan_db_dir` Path to metaphlan database. Example, /path/to/Reference_DBs/metaphlan4-db/. Default: null.
+* `--chocophlan_dir` Path to Humann's chocophlan nucleotide database. Example, /path/to/Reference_DBs/humann3-db/chocophlan/. Default: null.
+* `--uniref_dir` Path to Humann's Uniref protein database. Example, /path/to/Reference_DBs/humann3-db/uniref/. Default: null.
+* `--utilities_dir` Path to Humann's untilities database. Example, /path/to/Reference_DBs/humann3-db/utility_mapping/.  Default: null.
+*GTDBTK database:*
+* `--GTDBTK_LINK` GTDBTK database online download link. Default: https://data.gtdb.ecogenomic.org/releases/release220/220.0/auxillary_files/gtdbtk_package/full_package/gtdbtk_r220_data.tar.gz.
+* `--gtdbtk_db_dir` Path to GTDBTK database. Example, /path/Reference_DBs/GTDB-tk-ref-db/. Default: null.
+*kofam scan database database:*
+* `--ko_db_dir`  Path to kofam scan database. Example, /path/to/Reference_DBs/kofamscan_db/. Default: null.
+*Paths to existing conda environments to use, otherwise, new ones will be created using the yaml files in envs/ directory. since this directory for the exact packages required in an environment*
+* `--conda_qc`Path to a conda environment containing fastqc, multiqc, zip and python. Default: null.
+* `--conda_humann3` Path to a conda environment with humann3 installed. Default: null.
+* `--conda_cat` Path to a conda environment containing CAT (Contig annotation tool). Default: null.
+* `--conda_prodigal` Path to a conda environment with prodigal installed. Default: null.
+* `--conda_metabat` Path to a conda environment containing metabat. Default: null.
+* `--conda_gtdbtk` Path to a conda environment containing gtdbtk. Default: null.
+* `--conda_kegg_decoder` Path to a conda environment with kegg_decoder installed. Default: null.
+* `--conda_megahit`  Path to a conda environment containing megahit. Default: null.
+* `--conda_bit`  Path to a conda environment with bit installed. Default: null.
+* `--conda_kofamscan` Path to a conda environment containing KOFAM SCAN. Default: null.
+* `--conda_mapping` Path to a conda environment with bowtie and samtools installed. Default: null.
+* `--conda_checkm` Path to a conda environment with checkm installed. Default: null.
+* `--conda_kraken2` Path to a conda environment with kraken2 installed. Default: null.  
+* `conda_kaiju` Path to a conda environment with kaiju installed. Default: null.
+* `conda_krona` Path to a conda environment with krona installed. Default: null. 
+* `conda_pavian` Path to a conda environment with R poackage pavian installed. Default: null.
+* `conda_nanoplot` Path to a conda environment with nanoplot installed. Default: null.
+* `conda_krakentools` Path to a conda environment with krakentools installed. Default: null.
+* `conda_filtlong` Path to a conda environment with filtlong installed. Default: null.
+* `conda_porechop` Path to a conda environment with porechop installed. Default: null.
+* `conda_samtools` Path to a conda environment with samtools installed. Default: null. 
+* `conda_dorado` Path to a conda environment with dorado installed. Default: null.
+* `conda_pod5`  Path to a conda environment with pod5 python module installed. Default: null.
+* `conda_spades` Path to a conda environment with spades assembler installed. Default: null.
+* `conda_fastp` Path to a conda environment with fastp installed. Default: null. 
+* `conda_flye` Path to a conda environment with flye installed. Default: null.
+* `conda_medaka` Path to a conda environment with medaka installed. Default: null.
+* `conda_rvis` Path to a conda environment with r visulization packages (tifyverse, pheatmap, htmlwidgets etc.) installed. Default: null.
+
+
+
+> *Note: These helper scripts [launch.sh](launch.sh) and [launch.slurm](launch.slurm) can be used to launch the workflow from anywhere and to submit your run to nextflow tower for workflow monitoring. Please see the scripts on how to run them after setting the required paths and parameters* 
 <br>
 
 #### 4c. Modify parameters and compute resources in the Nextflow config file
 
-Additionally, all parameters and workflow resources can be directly specified in the [nextflow.config](./workflow_code/nextflow.config) file. For detailed instructions on how to modify and set parameters in the config file, please see the [documentation here](https://www.nextflow.io/docs/latest/config.html).
+Additionally, all parameters and workflow resources can be directly specified in the [nextflow.config](nextflow.config) file. For detailed instructions on how to modify and set parameters in the config file, please see the [documentation here](https://www.nextflow.io/docs/latest/config.html).
 
-Once you've downloaded the workflow template, you can modify the parameters in the `params` scope and cpus/memory requirements in the `process` scope in your downloaded version of the [nextflow.config](workflow_code/nextflow.config) file as needed in order to match your dataset and system setup. Additionally, if necessary, you can modify each variable in the [nextflow.config](workflow_code/nextflow.config) file to be consistent with the study you want to process and the computer you're using for processing.
+Once you've downloaded the workflow template, you can modify the parameters in the `params` scope and cpus/memory requirements in the `process` scope in your downloaded version of the [nextflow.config](nextflow.config) file as needed in order to match your dataset and system setup. Additionally, if necessary, you can modify each variable in the [nextflow.config](nextflow.config) file to be consistent with the study you want to process and the computer you're using for processing.
 
 <br>
 

@@ -26,7 +26,7 @@
 ## Low Biomass Long Read Required Columns
 
 ### Approach 1: Start with pod5 or fast5 files as input
-> *Note: There should be one row per sample. See the [multiple.csv](multiple.csv) as an example.*
+> *Note: There should be one row per sample. See the [input_dir_barcodes.csv](input_dir_barcodes.csv) as an example.*
 
 | Column Name | Type | Description | Example |
 |:------------|:-----|:------------|:--------|

@@ -52,7 +52,7 @@ process KRAKEN2TABLE {
         path(reports)
 
     output:
-        path("${params.additional_filename_prefix}merged_kraken_table${params.assay_suffix}.csv"), emit: table
+        path("${params.additional_filename_prefix}merged_kraken_table${params.assay_suffix}.tsv"), emit: table
         path ("versions.txt"), emit: version
 
     script:

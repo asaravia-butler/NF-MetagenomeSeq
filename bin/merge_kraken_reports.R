@@ -94,5 +94,5 @@ rownames(species_table) <- species_names
 
 output_prefix <- opt[["output-prefix"]]
 assay_suffix <- opt[["assay-suffix"]]
-write_csv(x = species_table, 
-          file = glue("{output_prefix}merged_kraken_table{assay_suffix}.csv"))
+write_tsv(x = species_table, 
+          file = glue("{output_prefix}merged_kraken_table{assay_suffix}.tsv"))

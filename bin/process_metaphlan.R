@@ -9,7 +9,7 @@
 # example: Rscript process_metaphlan.R \
 #                  --metaphlan-table 'Metaphlan-taxonomy_GLmetagenomics.tsv' \
 #                  --read-count 'reads_per_sample.txt' \
-#                  --assay-suffix 'GLlbnMetag'
+#                  --assay-suffix '_GLlbnMetag'
 
 ###############################################################################
 
@@ -51,9 +51,6 @@ option_list <- list(
 library(tidyverse)
 library(glue)
 
-
-
-
 opt_parser <- OptionParser(
   option_list=option_list,
   usage = "Rscript %prog \\
@@ -93,7 +90,7 @@ if(is.null(opt[["read-count"]])) {
 # Function to read an input table into a dataframe
 read_input_table <- function(file_name){
   
-  df <- read_delim(file = file_name, delim = "\t", comment = "#")
+  df <- read_delim(file = file_name, comment = "#")
   colnames(df)[1] <- "taxonomy"
   
   df <- df %>%
@@ -141,9 +138,12 @@ tab2 <- (abund_species_table %>% t) / 100
 
 
 # Read raw read count by sample
-counts <- read_delim(read_count, delim = "\t", 
-                     col_names = c("Sample_ID", "Reads"), skip = 1) %>%
-  as.data.frame()
+counts <- read_delim(read_count, col_names = c("Sample_ID", "Reads"), skip = 1) 
+max_val <- counts$Reads %>% max
+# If counts are expressed as decimals
+# multiply by a million
+if(max_val < 10) { counts <- counts %>%  mutate(Reads= Reads * 1000000)}
+counts <- counts %>% as.data.frame()
 
 
 # Set rownames as sample names
@@ -166,4 +166,4 @@ table2write <- species_table  %>%
   as.data.frame() %>%
   rownames_to_column("Species")
 
-write_csv(x = table2write, file = glue("{prefix}metaphlan_species_table{suffix}.csv"))
+write_tsv(x = table2write, file = glue("{prefix}metaphlan_species_table{suffix}.tsv"))

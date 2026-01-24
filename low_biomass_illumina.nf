@@ -249,12 +249,14 @@ include { assembly_based } from "./modules/assembly_based_processing.nf"
 workflow run_read_based_analysis {
 
     take:
+        reads_per_sample
+        metadata
         filtered_ch
 
     main:
 
         software_versions_ch = Channel.empty()
-        read_based(filtered_ch,
+        read_based(reads_per_sample, metadata, filtered_ch,
                     params.krakendb_dir,
                     params.kaijudb_dir,
                     params.chocophlan_dir,
@@ -274,6 +276,7 @@ workflow run_read_based_analysis {
 workflow run_assembly_based_analysis {
 
     take:
+        metadata
         file_ch
         filtered_ch
 
@@ -286,7 +289,7 @@ workflow run_assembly_based_analysis {
         gtdbtk_db_dir = params.gtdbtk_db_dir
 
         // Run assembly based workflow 
-        assembly_based(file_ch, filtered_ch, kofam_db, 
+        assembly_based(metadata, file_ch, filtered_ch, kofam_db, 
                         cat_db, gtdbtk_db_dir, params.use_gtdbtk_scratch_location)
 
 
@@ -364,36 +367,55 @@ workflow {
 
     // Remove contaminant and quality ckeck
     remove_contaminants(file_ch, filtered_ch)
-    noblank_qc(Channel.of("noblank"), params.multiqc_config,remove_contaminants.out.clean_reads)
+    noblank_qc(Channel.of("decontam"), params.multiqc_config,remove_contaminants.out.clean_reads)
     remove_contaminants.out.versions | mix(software_versions_ch) | set{software_versions_ch}
     noblank_qc.out.versions | mix(software_versions_ch) | set{software_versions_ch}
 
     // Remove host
-    remove_host(params.host_name, params.host_url, params.host_fasta,
+    remove_host("HostRM", params.host_name, params.host_url, params.host_fasta,
                 params.host_db_dir, remove_contaminants.out.clean_reads)
     
-    DECONTAMED_MAP2GENOME(params.custome_genome, Channel.of("decontamed"), remove_host.out.clean_reads)
-    nohost_qc(Channel.of("nohost"), params.multiqc_config, remove_host.out.clean_reads)
+    //DECONTAMED_MAP2GENOME(params.custome_genome, Channel.of("decontamed"), remove_host.out.clean_reads)
+    nohost_qc(Channel.of("HostRM"), params.multiqc_config, remove_host.out.clean_reads)
 
-    DECONTAMED_MAP2GENOME.out.version | mix(software_versions_ch) | set{software_versions_ch}
+    //DECONTAMED_MAP2GENOME.out.version | mix(software_versions_ch) | set{software_versions_ch}
     remove_host.out.versions | mix(software_versions_ch) | set{software_versions_ch}
+
+    // Prepare metadata
+    meta_header = Channel.of(["sample_id", "group", "sample_or_ntc", "concentration"])
+    file_ch.map{
+                row -> tuple( "${row.sample_id}", row.group, row.sample_or_ntc, row.concentration )
+                }
+                .distinct()
+                .set{body}
+
+    meta_header.concat(body)
+              .map{ sample_id, group, sample_or_ntc, concentration ->
+                   "${sample_id},${group},${sample_or_ntc},${concentration}"
+              }
+              .collectFile(name: "metadata_file.txt", newLine: true, sort:false)
+              .set{metadata}
+     
+     // Get the number of reads per sample after removing contaminats and host reads for
+     // relative abundance to count calcultaion for metaphalan results
+     reads_per_sample = nohost_qc.out.reads_per_sample
 
     // Run the analysis based on selection i.e, read-based, assembly-based or both
     // it will run both by default
     if(params.workflow == 'read-based'){
            
-          run_read_based_analysis(remove_host.out.clean_reads)     
+          run_read_based_analysis(reads_per_sample, metadata, remove_host.out.clean_reads)     
           run_read_based_analysis.out.versions | mix(software_versions_ch) | set{software_versions_ch}
           
     }else if(params.workflow == 'assembly-based') {
 
-          run_assembly_based_analysis(file_ch,remove_host.out.clean_reads)
+          run_assembly_based_analysis(metadata, file_ch, remove_host.out.clean_reads)
           run_assembly_based_analysis.out.versions | mix(software_versions_ch) | set{software_versions_ch}
 
     }else{
 
-          run_read_based_analysis(remove_host.out.clean_reads)
-          run_assembly_based_analysis(file_ch, remove_host.out.clean_reads)
+          run_read_based_analysis(reads_per_sample, metadata, remove_host.out.clean_reads)
+          run_assembly_based_analysis(metadata, file_ch, remove_host.out.clean_reads)
 
           run_read_based_analysis.out.versions | mix(software_versions_ch) | set{software_versions_ch}
           run_assembly_based_analysis.out.versions | mix(software_versions_ch) | set{software_versions_ch}

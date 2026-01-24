@@ -3,9 +3,9 @@
 
 ###############################################################################
 # AUTHOR : OLABIYI ADEREMI OBAYOMI
-# DESCRIPTION: A script to process contig or  gene or function tables generated from assembly based processing.
+# DESCRIPTION: A script to process contig or gene or function tables generated from assembly based processing.
 # E-mail: obadbotanist@yahoo.com
-# Created: November 2025
+# Created: January 2026
 # example: Rscript process_assembly_table.R \
 #                  --assembly-table 'Combined-contig-level-taxonomy-coverages-CPM_GLmetagenomics.tsv' \
 #                  --assembly-summary 'assembly-summaries_GLmetagenomics.tsv' \
@@ -43,7 +43,7 @@ option_list <- list(
               metavar="level"),
   make_option(c("-T", "--type"), type="character", default="taxonomy", 
               help="The type of assembly annotation performed in the input table.
-              either taxonomy or function. Default: taxonomy.",
+              either taxonomy or KO. Default: taxonomy.",
               metavar="type"),
   make_option(c("-o", "--output-prefix"), type="character", default="", 
               help="Unique name to tag onto output files. Default: empty string.",
@@ -54,8 +54,6 @@ option_list <- list(
               default=FALSE,
               help="Print out version number and exit.", metavar = "boolean")
 )
-
-
 
 
 library(tidyverse)
@@ -163,7 +161,7 @@ fix_names<- function(taxonomy,stringToReplace,suffix){
 read_input_table <- function(file_name){
   
   # Get depth from file name
-  df <- read_delim(file = file_name, delim = "\t", comment = "#")
+  df <- read_delim(file = file_name, comment = "#")
   return(df)
   
 }
@@ -220,7 +218,7 @@ if(any(str_detect(col_names, "gene_calls_identified"))){
 }
 
 
-if(type == "function"){
+if(type == "KO"){
   
   table2write <- read_input_table(assembly_table) %>% select(KO_ID, !!sample_order)
   
@@ -236,4 +234,4 @@ table2write <- read_taxonomy_table(assembly_table, sample_order) %>%
 
 }
 
-write_csv(x = table2write, file = glue("{prefix}{level}_{type}_table{suffix}.csv"))
+write_tsv(x = table2write, file = glue("{prefix}{level}-level-{type}{suffix}.tsv"))
