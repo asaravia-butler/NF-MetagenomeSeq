@@ -252,6 +252,7 @@ nextflow run low_biomass_illumina.nf  -resume -profile singularity --input_file 
 * `--use_gtdbtk_scratch_location` Should a scratch location be used to store GTDBTK temp files? true or false. Scratch directory for gtdb-tk, if wanting to use disk space instead of RAM, can be memory intensive;
   see https://ecogenomics.github.io/GTDBTk/faq.html#gtdb-tk-reaches-the-memory-limit-pplacer-crashes leave empty if wanting to use memory, the default, put in quotes the path to a directory that
   already exists if wanting to use disk space. Default: false.
+
 **MAG parameters:** MAG filtering cutoffs based on checkm quality assessments (in percent); see https://github.com/Ecogenomics/CheckM/wiki/Reported-Statistics.
 * `--min_est_comp` Minimum estimated completion. Default: 90.
 * `--max_est_redund` Minimum estimated redundancy. Default: 10.
@@ -260,7 +261,6 @@ nextflow run low_biomass_illumina.nf  -resume -profile singularity --input_file 
   'True' for yes, anything else will be considered 'False' and the default full tree will be used. Default: 'True'.
 * `--max_mem` Maximum memory allowed, passed to megahit assembler. Can be set either by proportion of available on system, e.g. 0.5
    or by absolute value in bytes, e.g. 100e9 would be 100 GB. Default: 100e9.
-
 * `--pileup_mem` pileup.sh paramater for calculating contig coverage and depth. Memory used by bbmap's pileup.sh (within the GET_COV_AND_DET process).
           passed as the -Xmx parameter, 20g means 20 gigs of RAM, 20m means 20 megabytes.
           5g should be sufficient for most assemblies, but if that rule is failing, this may need to be increased.Default: '5g'
@@ -268,23 +268,29 @@ nextflow run low_biomass_illumina.nf  -resume -profile singularity --input_file 
 
 **Paths to existing databases and database links.**
 * `--DB_ROOT`   FULL PATH to root directory where the databases will be downloaded if they don't exist. Relative paths such as '~/' and '../' will fail, please don't use them. Default: ../Reference_DBs/
+
 *CAT database directory strings: The strings below will be added to the end of the --database.cat_db path arguement provided below.*
 * `--cat_taxonomy_dir`  Path to CAT taxonomy database directory. Default: 2021-01-07_taxonomy/.
 *  `--cat_db_sub_dir`  Path to CAT database sub directory. Default: 2021-01-07_CAT_database/.
 *  `--CAT_DB_LINK`  CAT database online download link. Default: https://tbb.bio.uu.nl/bastiaan/CAT_prepare/CAT_prepare_20210107.tar.gz.
+
 *CAT database*
 * `--cat_db` Path to CAT database. Example, /path/to/Reference_DBs/CAT_prepare_20210107/. Default: null.
+
 *Humann database:*
 * `--metaphlan_db_dir` Path to metaphlan database. Example, /path/to/Reference_DBs/metaphlan4-db/. Default: null.
 * `--chocophlan_dir` Path to Humann's chocophlan nucleotide database. Example, /path/to/Reference_DBs/humann3-db/chocophlan/. Default: null.
 * `--uniref_dir` Path to Humann's Uniref protein database. Example, /path/to/Reference_DBs/humann3-db/uniref/. Default: null.
 * `--utilities_dir` Path to Humann's untilities database. Example, /path/to/Reference_DBs/humann3-db/utility_mapping/.  Default: null.
+
 *GTDBTK database:*
 * `--GTDBTK_LINK` GTDBTK database online download link. Default: https://data.gtdb.ecogenomic.org/releases/release220/220.0/auxillary_files/gtdbtk_package/full_package/gtdbtk_r220_data.tar.gz.
 * `--gtdbtk_db_dir` Path to GTDBTK database. Example, /path/Reference_DBs/GTDB-tk-ref-db/. Default: null.
+
 *kofam scan database database:*
 * `--ko_db_dir`  Path to kofam scan database. Example, /path/to/Reference_DBs/kofamscan_db/. Default: null.
-*Paths to existing conda environments to use, otherwise, new ones will be created using the yaml files in envs/ directory. since this directory for the exact packages required in an environment*
+
+**Paths to existing conda environments** to use, otherwise, new ones will be created using the yaml files in envs/ directory. since this directory for the exact packages required in an environment
 * `--conda_qc`Path to a conda environment containing fastqc, multiqc, zip and python. Default: null.
 * `--conda_humann3` Path to a conda environment with humann3 installed. Default: null.
 * `--conda_cat` Path to a conda environment containing CAT (Contig annotation tool). Default: null.
