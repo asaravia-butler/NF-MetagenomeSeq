@@ -15,7 +15,7 @@ process METAPHLAN2COUNT {
 
     output:
         path("${params.additional_filename_prefix}metaphlan_species_table${params.assay_suffix}.tsv"), emit: table
-        path("version.txt"), emit: version
+        path("versions.txt"), emit: version
     script:
         """
         process_metaphlan.R \\
@@ -47,7 +47,7 @@ process KAIJU2SPECIES_TABLE  {
     output:
 
        path("${params.additional_filename_prefix}kaiju_species_table${params.assay_suffix}.tsv"), emit: table
-       path("version.txt"), emit: version
+       path("versions.txt"), emit: version
 
     script:
         """
@@ -79,7 +79,7 @@ process FILTER_RARE {
 
     output:
        path("${meta.output_file}"), emit: table
-       path("version.txt"), emit: version
+       path("versions.txt"), emit: version
 
     script:
         """
@@ -113,7 +113,7 @@ process ASSEMBLY_TABLE {
 
     output:
        path("${params.additional_filename_prefix}${level}-level*.tsv"), emit: table
-       path("version.txt"), emit: version
+       path("versions.txt"), emit: version
 
     script:
         """
@@ -152,7 +152,7 @@ process DECONTAM  {
     output:
         path("*_decontam_results*.tsv"), emit: result // decontam's primary results
         path("*_decontam_table*.tsv"), optional: true, emit: table // decontaminated feature table
-        path("version.txt"), emit: version
+        path("versions.txt"), emit: version
 
     script:
         """
@@ -195,9 +195,9 @@ process BARPLOT {
       path(metadata)  // 'mapping/metadata.txt'
         
     output:
-         path("${prefix}.png"), emit: plot
-         path("${prefix}.html"), emit: html
-         path("version.txt"), emit: version
+         path("${prefix}_barplot${params.assay_suffix}.png"), emit: plot
+         path("${prefix}_barplot${params.assay_suffix}..html"), emit: html
+         path("versions.txt"), emit: version
 
     script:
         """
@@ -207,11 +207,12 @@ process BARPLOT {
                   --group-column '${meta.group}' \\
                   --feature-column '${meta.feature}' \\
                   --samples-column '${meta.samples}'  \\
-                  --output-prefix  '${meta.prefix}'
+                  --output-prefix  '${meta.prefix}' \\
+                  --assay-suffix '${params.assay_suffix}'
 
-        Rscript -e "VERSIONS=sprintf('tidyverse %s\\nglue %s\\nplotly %s\\nhtmlwidgets %s\\n',  \\
+        Rscript -e "VERSIONS=sprintf('tidyverse %s\\nglue %s\\nplotly %s\\nhtmlwidgets %s\\n', \\
                                     packageVersion('tidyverse'), \\
-                                    packageVersion('glue'), \\ 
+                                    packageVersion('glue'), \\
                                     packageVersion('plotly'), \\
                                     packageVersion('htmlwidgets')); \\
                     write(x=VERSIONS, file='versions.txt', append=TRUE)"
@@ -234,8 +235,8 @@ process HEATMAP {
 
         
     output:
-       path("${meta.prefix}.png"), emit: plot
-       path("version.txt"), emit: version
+       path("${meta.prefix}_heatmap${params.assay_suffix}.png"), emit: plot
+       path("versions.txt"), emit: version
 
 
     script:

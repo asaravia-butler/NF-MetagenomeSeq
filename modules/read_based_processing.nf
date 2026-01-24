@@ -377,13 +377,37 @@ workflow read_based {
             make_humann_db.out.versions | mix(software_versions_ch) | set{software_versions_ch} 
         } 
 
+        gene_families_ch = HUMANN.out.genefamilies.collect()
+        pathabundance_ch = HUMANN.out.pathabundance.collect()
+        pathcoverage_ch = HUMANN.out.pathcoverage.collect()
+        metaphlan_bugs_list_ch = HUMANN.out.metaphlan_bugs_list.map{sample_id, bug_list -> bug_list}.collect()
+        
+        if(chocophlan_dir && uniref_dir && metaphlan_dir && utilities_dir){
+            COMBINE_READ_BASED_PROCESSING_TABLES(gene_families_ch, pathabundance_ch, pathcoverage_ch, utilities_dir)
+        }else{
+            COMBINE_READ_BASED_PROCESSING_TABLES(gene_families_ch, pathabundance_ch,
+                                              pathcoverage_ch, make_humann_db.out.utilities_dir)
+        }
+        SPLIT_READ_BASED_PROCESSING_TABLES(COMBINE_READ_BASED_PROCESSING_TABLES.out.gene_families,
+                                           COMBINE_READ_BASED_PROCESSING_TABLES.out.path_abundances,
+                                           COMBINE_READ_BASED_PROCESSING_TABLES.out.path_coverages)
+
+        GEN_NORMALIZED_READ_BASED_PROCESSING_TABLES(SPLIT_READ_BASED_PROCESSING_TABLES.out.gene_families,
+                                                    SPLIT_READ_BASED_PROCESSING_TABLES.out.path_abundances)
+
+        GEN_READ_BASED_PROCESSING_KO_TABLE(SPLIT_READ_BASED_PROCESSING_TABLES.out.gene_families)
+        ko_table_ch = GEN_READ_BASED_PROCESSING_KO_TABLE.out.gene_families
+        
+        COMBINE_READ_BASED_PROCESSING_TAXONOMY(metaphlan_bugs_list_ch)
+        taxonomy_ch = COMBINE_READ_BASED_PROCESSING_TAXONOMY.out.taxonomy
+
        // ------------------- Metaphlan
         METAPHLAN2KRONA(HUMANN.out.metaphlan_bugs_list)
         METAPHLAN_REPORT("metaphlan", METAPHLAN2KRONA.out.krona.collect())
 
         // Unfiltered
         // Create raw table
-        METAPHLAN2COUNT(HUMANN.out.metaphlan_bugs_list, reads_per_sample)
+        METAPHLAN2COUNT(taxonomy_ch, reads_per_sample)
         unfilt_metaphlan_barplot_meta = Channel.of([group: "group",
                                feature: 'Species',
                                samples: 'sample_id',
@@ -410,29 +434,6 @@ workflow read_based {
                                prefix:  'metaplan_decontam_species'])
         METAPHLAN_DECONTAM_BARPLOT(decontam_metaphlan_barplot_meta, METAPHLAN_DECONTAM.out.table, metadata)
 
-        gene_families_ch = HUMANN.out.genefamilies.collect()
-        pathabundance_ch = HUMANN.out.pathabundance.collect()
-        pathcoverage_ch = HUMANN.out.pathcoverage.collect()
-        metaphlan_bugs_list_ch = HUMANN.out.metaphlan_bugs_list.map{sample_id, bug_list -> bug_list}.collect()
-        
-        if(chocophlan_dir && uniref_dir && metaphlan_dir && utilities_dir){
-            COMBINE_READ_BASED_PROCESSING_TABLES(gene_families_ch, pathabundance_ch, pathcoverage_ch, utilities_dir)
-        }else{
-            COMBINE_READ_BASED_PROCESSING_TABLES(gene_families_ch, pathabundance_ch,
-                                              pathcoverage_ch, make_humann_db.out.utilities_dir)
-        }
-        SPLIT_READ_BASED_PROCESSING_TABLES(COMBINE_READ_BASED_PROCESSING_TABLES.out.gene_families,
-                                           COMBINE_READ_BASED_PROCESSING_TABLES.out.path_abundances,
-                                           COMBINE_READ_BASED_PROCESSING_TABLES.out.path_coverages)
-
-        GEN_NORMALIZED_READ_BASED_PROCESSING_TABLES(SPLIT_READ_BASED_PROCESSING_TABLES.out.gene_families,
-                                                    SPLIT_READ_BASED_PROCESSING_TABLES.out.path_abundances)
-
-        GEN_READ_BASED_PROCESSING_KO_TABLE(SPLIT_READ_BASED_PROCESSING_TABLES.out.gene_families)
-        ko_table_ch = GEN_READ_BASED_PROCESSING_KO_TABLE.out.gene_families
-        
-        COMBINE_READ_BASED_PROCESSING_TAXONOMY(metaphlan_bugs_list_ch)
-        taxonomy_ch = COMBINE_READ_BASED_PROCESSING_TAXONOMY.out.taxonomy
 
         KAIJU_DECONTAM.out.version | mix(software_versions_ch) | set{software_versions_ch}
         KAIJU_DECONTAM_BARPLOT.out.version | mix(software_versions_ch) | set{software_versions_ch} 

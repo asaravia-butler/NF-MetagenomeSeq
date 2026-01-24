@@ -1,4 +1,4 @@
- #!/usr/bin/env Rscript
+#!/usr/bin/env Rscript
 
 
 ###############################################################################
@@ -10,7 +10,6 @@
 #                  --metaphlan-table 'Metaphlan-taxonomy_GLmetagenomics.tsv' \
 #                  --read-count 'reads_per_sample.txt' \
 #                  --assay-suffix '_GLlbnMetag'
-
 ###############################################################################
 
 library(optparse)
@@ -44,7 +43,6 @@ option_list <- list(
               default=FALSE,
               help="Print out version number and exit.", metavar = "boolean")
 )
-
 
 
 
@@ -151,7 +149,9 @@ rownames(counts) <- counts$Sample_ID
 # Drop the Sample_ID column
 counts <- counts[, -1, drop=FALSE]
 
-tab2 <- tab2[rownames(counts),]
+samples <- intersect(rownames(counts), rownames(tab2))
+tab2 <- tab2[samples,]
+counts <- counts[samples, ,drop=FALSE]
 
 # Convert relative abundance to raw count
 species_table <- map2(tab2 %>% as.data.frame, 

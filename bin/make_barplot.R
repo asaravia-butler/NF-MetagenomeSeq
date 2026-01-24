@@ -188,7 +188,6 @@ colors2use <- custom_palette[-c(21:23,
                                          x = custom_palette, ignore.case = TRUE))]
 
 
-
 feature_table_file <- opt[["feature-table"]] # 'kaiju_species_table_GLlbnMetag.csv'
 metdata_file <- opt[["metadata-table"]] # "metadata.csv"
 samples_column <- opt[["samples-column"]] # 'Sample_ID'
@@ -203,6 +202,13 @@ feature_table <- read_delim(feature_table_file) %>%  as.data.frame()
 rownames(feature_table) <- feature_table[[1]]
 feature_table <- feature_table[,-1]
 
+number_of_species <- nrow(feature_table)
+
+if( number_of_species > length(colors2use)){
+
+    N <- number_of_species / length(colors2use)
+    colors2use  <- rep(colors2use, times=N*2)
+}
 
 # Prepare metadata
 metadata <- read_delim(metdata_file) %>% as.data.frame()

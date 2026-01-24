@@ -18,3 +18,4 @@ dependencies:
     - r-dt=0.34.0
     - r-patchwork=1.3.2
     - bioconductor-phyloseq=1.46.0
+    - bioconductor-decontam=1.22.0

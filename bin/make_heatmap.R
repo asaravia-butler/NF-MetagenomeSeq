@@ -160,7 +160,7 @@ names(annotation_colors) <- group_column
 
 # Create heatmap
 png(filename = glue("{prefix}_heatmap{suffix}.png"), width = width,
-    height = height, units = "in", res = 300)
+    height = height, units = "in")
 pheatmap(mat = feature_table[,rownames(col_annotation)],
          cluster_cols = FALSE, 
          cluster_rows = FALSE, 
