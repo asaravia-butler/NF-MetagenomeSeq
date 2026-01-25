@@ -54,7 +54,7 @@ process NANOPLOT {
     script:
     """
     NanoPlot \\
-        --prefix ${sample_id}_${prefix} \\
+        --prefix ${sample_id}_${prefix}_ \\
         -t ${task.cpus} \\
         --fastq ${reads[0]} \\
         -o .
