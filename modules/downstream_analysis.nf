@@ -5,7 +5,7 @@ nextflow.enable.dsl = 2
 
 process METAPHLAN2COUNT {
 
-    tag "Processing metaphlan count table"
+    tag "Processing metaphlan count table..."
     label "R_downstream"
     label "read_based_outputs"
 
@@ -24,10 +24,10 @@ process METAPHLAN2COUNT {
                   --output-prefix '${params.additional_filename_prefix}' \\
                   --assay-suffix '${params.assay_suffix}'
 
-        Rscript -e "VERSIONS=sprintf('tidyverse %s\\nglue %s\\n',  \\
+        Rscript -e "VERSIONS=sprintf('tidyverse %s\\nglue %s\\n', \\
                                     packageVersion('tidyverse'), \\
                                     packageVersion('glue')); \\
-                    write(x=VERSIONS, file='versions.txt', append=TRUE)" 
+                    write(x=VERSIONS, file='versions.txt', append=TRUE)"
         """
 
 }
@@ -56,7 +56,7 @@ process KAIJU2SPECIES_TABLE  {
               --output-prefix '${params.additional_filename_prefix}' \\
               --assay-suffix '${params.assay_suffix}'
 
-        Rscript -e "VERSIONS=sprintf('tidyverse %s\\nglue %s\\n',  \\
+        Rscript -e "VERSIONS=sprintf('tidyverse %s\\nglue %s\\n', \\
                                     packageVersion('tidyverse'), \\
                                     packageVersion('glue')); \\
                     write(x=VERSIONS, file='versions.txt', append=TRUE)"
@@ -67,7 +67,7 @@ process KAIJU2SPECIES_TABLE  {
 
 process FILTER_RARE {
 
-    tag "Filtering out rare features"
+    tag "Filtering out rare features..."
     label "R_downstream"
 
 
@@ -90,7 +90,7 @@ process FILTER_RARE {
                   --output-file  '${meta.output_file}'
 
 
-        Rscript -e "VERSIONS=sprintf('tidyverse %s\\nglue %s\\n',  \\
+        Rscript -e "VERSIONS=sprintf('tidyverse %s\\nglue %s\\n', \\
                                     packageVersion('tidyverse'), \\
                                     packageVersion('glue')); \\
                     write(x=VERSIONS, file='versions.txt', append=TRUE)"
@@ -150,8 +150,8 @@ process DECONTAM  {
         path(feature_table) // kaiju_species_table_GLlbnMetag.csv
 
     output:
-        path("*_decontam_results*.tsv"), emit: result // decontam's primary results
-        path("*_decontam_table*.tsv"), optional: true, emit: table // decontaminated feature table
+        path("*_decontam_*_results*.tsv"), emit: result // decontam's primary results
+        path("*_decontam_*_table*.tsv"), optional: true, emit: table // decontaminated feature table
         path("versions.txt"), emit: version
 
     script:
@@ -171,9 +171,9 @@ process DECONTAM  {
 
 
 
-        Rscript -e "VERSIONS=sprintf('tidyverse %s\\nglue %s\\nphyloseq %s\\ndecontam %s\\n',  \\
+        Rscript -e "VERSIONS=sprintf('tidyverse %s\\nglue %s\\nphyloseq %s\\ndecontam %s\\n', \\
                                     packageVersion('tidyverse'), \\
-                                    packageVersion('glue'), \\ 
+                                    packageVersion('glue'), \\
                                     packageVersion('phyloseq'), \\
                                     packageVersion('decontam')); \\
                     write(x=VERSIONS, file='versions.txt', append=TRUE)"
@@ -185,7 +185,7 @@ process DECONTAM  {
 
 process BARPLOT {
 
-    tag "Making your bar plot"
+    tag "Making your bar plot..."
     label "R_downstream"
     label "read_based_outputs"
 
@@ -196,7 +196,7 @@ process BARPLOT {
         
     output:
          path("${prefix}_barplot${params.assay_suffix}.png"), emit: plot
-         path("${prefix}_barplot${params.assay_suffix}..html"), emit: html
+         path("${prefix}_barplot${params.assay_suffix}.html"), emit: html
          path("versions.txt"), emit: version
 
     script:
@@ -223,7 +223,7 @@ process BARPLOT {
 
 process HEATMAP {
 
-    tag "Creating "
+    tag "Making your heatmap..."
     label "R_downstream"
     label "combine_outputs"
 
@@ -250,9 +250,9 @@ process HEATMAP {
                   --assay-suffix '${params.assay_suffix}'
 
 
-        Rscript -e "VERSIONS=sprintf('tidyverse %s\\nglue %s\\npheatmap %s\\n',  \\
+        Rscript -e "VERSIONS=sprintf('tidyverse %s\\nglue %s\\npheatmap %s\\n', \\
                                     packageVersion('tidyverse'), \\
-                                    packageVersion('glue'), \\ 
+                                    packageVersion('glue'), \\
                                     packageVersion('pheatmap')); \\
                     write(x=VERSIONS, file='versions.txt', append=TRUE)"
         """

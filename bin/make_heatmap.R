@@ -147,8 +147,10 @@ rownames(col_annotation) <-  rownames(col_annotation)
 # Calculate output plot width and height
 number_of_samples <- ncol(feature_table)
 width <- 1 * number_of_samples
+if(width > 100) { width <- 100}
 number_of_features <- nrow(feature_table)
-height <- 0.2 * number_of_features 
+height <- 0.2 * number_of_features
+if(height > 100) { height <- 100}
 
 # Set colors by group
 groups <- metadata[[group_column]] %>%  unique()
@@ -160,7 +162,7 @@ names(annotation_colors) <- group_column
 
 # Create heatmap
 png(filename = glue("{prefix}_heatmap{suffix}.png"), width = width,
-    height = height, units = "in")
+    height = height, units = "in", res=300)
 pheatmap(mat = feature_table[,rownames(col_annotation)],
          cluster_cols = FALSE, 
          cluster_rows = FALSE, 

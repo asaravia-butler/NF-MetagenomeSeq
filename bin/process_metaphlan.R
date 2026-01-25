@@ -136,7 +136,12 @@ tab2 <- (abund_species_table %>% t) / 100
 
 
 # Read raw read count by sample
-counts <- read_delim(read_count, col_names = c("Sample_ID", "Reads"), skip = 1) 
+counts <- read_delim(read_count, col_names = c("Sample_ID", "Reads"), skip = 1) %>%
+         	mutate(Sample_ID=map_chr(Sample_ID, function(val) { 
+						  str_replace_all(val,  "(.+)_R[12].+", "\\1" ) 
+                                                   } ) ) %>%
+                distinct()
+
 max_val <- counts$Reads %>% max
 # If counts are expressed as decimals
 # multiply by a million

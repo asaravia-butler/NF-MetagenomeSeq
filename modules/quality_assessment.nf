@@ -85,11 +85,26 @@ process MULTIQC {
               --interactive --config ${multiqc_config} \\
               --outdir ${params.additional_filename_prefix}${prefix}_multiqc_report  ${files} > /dev/null 2>&1
 
+
+      if [ `find -type f  -name 'multiqc_nanostat.txt' | wc -l` -gt 0 ]; then
+
+      # Nanopore dataset - Nanoplot
+
+      FILENAME=`find  -type f -name multiqc_nanostat.txt`
+      # Write out the number of reads per sample to file
+      awk 'BEGIN{print "Sample_ID\\tReads"} NR>1{printf "%s\\t%s\\n", \$1,\$6 }' \${FILENAME} \\
+           > ${params.additional_filename_prefix}${prefix}_reads_per_sample.tsv
+    
+      else
+
+      # Illumina dataset - fastqc
       FILENAME=`find  -type f -name multiqc_general_stats.txt`
       # Write out the number of reads per sample to file
       awk 'BEGIN{print "Sample_ID\\tReads"} NR>1{printf "%s\\t%s\\n", \$1,\$NF }' \${FILENAME} \\
            > ${params.additional_filename_prefix}${prefix}_reads_per_sample.tsv
-            
+          
+      fi  
+
       # zipping and removing unzipped dir
       zip -q -r \\
            ${params.additional_filename_prefix}${prefix}_multiqc${params.assay_suffix}_report.zip \\

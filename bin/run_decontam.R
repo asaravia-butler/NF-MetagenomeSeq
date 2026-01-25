@@ -225,7 +225,7 @@ suffix <- opt[["assay-suffix"]] # GLlbnMetag
 
 
 # Prepare feature table
-feature_table <- read_csv(feature_table_file) %>%  as.data.frame()
+feature_table <- read_delim(feature_table_file) %>%  as.data.frame()
 rownames(feature_table) <- feature_table[[1]]
 feature_table <- feature_table[,-1]  %>% as.matrix()
 
@@ -240,7 +240,7 @@ contamdf <- run_decontam(feature_table, metadata, threshold, prev_col, freq_col,
 contamdf <- as.data.frame(contamdf) %>% rownames_to_column(feature_column)
 
 type <- "species"
-if(method == "gene-function")  { type <- "ko"}
+if(method == "gene-function")  { type <- "KO"}
 
 # Write decontaminated feature table and decontam's primary results
 outfile <- glue("{prefix}{method}_decontam_{type}_results{suffix}.tsv")
