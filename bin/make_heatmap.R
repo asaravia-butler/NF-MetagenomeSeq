@@ -147,10 +147,13 @@ rownames(col_annotation) <-  rownames(col_annotation)
 # Calculate output plot width and height
 number_of_samples <- ncol(feature_table)
 width <- 1 * number_of_samples
-if(width > 100) { width <- 100}
+if(width < 10) { width <- 10} # Set the mininum width to 10 inches
+if(width > 100) { width <- 100} # Set the maximum width to 100 inches
 number_of_features <- nrow(feature_table)
 height <- 0.2 * number_of_features
-if(height > 100) { height <- 100}
+
+if(height < 10) { height <- 10} # Set the mininum height to 10 inches
+if(height > 100) { height <- 100} # Set the maximum height to 100 inches (highest that won't generate an error)
 
 # Set colors by group
 groups <- metadata[[group_column]] %>%  unique()
@@ -167,7 +170,7 @@ pheatmap(mat = feature_table[,rownames(col_annotation)],
          cluster_cols = FALSE, 
          cluster_rows = FALSE, 
          col = colours, 
-         angle_col = 0, 
+         angle_col = 90, 
          display_numbers = TRUE,
          fontsize = 12, 
          annotation_col = col_annotation,

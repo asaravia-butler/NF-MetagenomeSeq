@@ -9,11 +9,14 @@ nextflow.enable.dsl = 2
 // Make Kraken, Kaiju and Humann3 databases
 include { SETUP_KAIJU; SETUP_KRAKEN; make_humann_db } from "./database_creation.nf"
 
-// Metaphlan
-include { METAPHLAN2KRONA; KRONA_REPORT as METAPHLAN_REPORT } from "./visualize_taxonomy.nf"
-include { METAPHLAN2COUNT; BARPLOT as METAPHLAN_UNFILTERED_BARPLOT } from "./downstream_analysis.nf"
-include { FILTER_RARE as METAPHLAN_FILTER_RARE; BARPLOT as METAPHLAN_FILTERED_BARPLOT } from "./downstream_analysis.nf"
-include { DECONTAM as METAPHLAN_DECONTAM; BARPLOT as METAPHLAN_DECONTAM_BARPLOT } from "./downstream_analysis.nf"
+if(params.technology == "illumina"){
+    // Metaphlan
+    include { METAPHLAN2KRONA; KRONA_REPORT as METAPHLAN_REPORT } from "./visualize_taxonomy.nf"
+    include { METAPHLAN2COUNT; BARPLOT as METAPHLAN_UNFILTERED_BARPLOT } from "./downstream_analysis.nf"
+    include { FILTER_RARE as METAPHLAN_FILTER_RARE; BARPLOT as METAPHLAN_FILTERED_BARPLOT } from "./downstream_analysis.nf"
+    include { DECONTAM as METAPHLAN_DECONTAM; BARPLOT as METAPHLAN_DECONTAM_BARPLOT } from "./downstream_analysis.nf"
+}
+
 // Kraken2
 include { KRAKEN_CLASSIFY; KRAKEN2TABLE } from "./assign_taxonomy.nf"
 include { BARPLOT as KRAKEN_UNFILTERED_BARPLOT } from "./downstream_analysis.nf"
@@ -401,6 +404,8 @@ workflow read_based {
         COMBINE_READ_BASED_PROCESSING_TAXONOMY(metaphlan_bugs_list_ch)
         taxonomy_ch = COMBINE_READ_BASED_PROCESSING_TAXONOMY.out.taxonomy
 
+        if(params.technology == "illumina"){
+
        // ------------------- Metaphlan
         METAPHLAN2KRONA(HUMANN.out.metaphlan_bugs_list)
         METAPHLAN_REPORT("metaphlan", METAPHLAN2KRONA.out.krona.collect())
@@ -434,6 +439,8 @@ workflow read_based {
                                prefix:  'metaplan_decontam_species'])
         METAPHLAN_DECONTAM_BARPLOT(decontam_metaphlan_barplot_meta, METAPHLAN_DECONTAM.out.table, metadata)
 
+        METAPHLAN_REPORT.out.version | mix(software_versions_ch) | set{software_versions_ch}
+        }
 
         KAIJU_DECONTAM.out.version | mix(software_versions_ch) | set{software_versions_ch}
         KAIJU_DECONTAM_BARPLOT.out.version | mix(software_versions_ch) | set{software_versions_ch} 
@@ -446,7 +453,6 @@ workflow read_based {
         KAIJU2KRONA.out.version  | mix(software_versions_ch) | set{software_versions_ch}
         KAIJU_REPORT.out.version | mix(software_versions_ch) | set{software_versions_ch}
         HUMANN.out.version | mix(software_versions_ch) | set{software_versions_ch}
-        METAPHLAN_REPORT.out.version | mix(software_versions_ch) | set{software_versions_ch}
         
         COMBINE_READ_BASED_PROCESSING_TABLES.out.version | mix(software_versions_ch) | set{software_versions_ch}
         SPLIT_READ_BASED_PROCESSING_TABLES.out.version | mix(software_versions_ch) | set{software_versions_ch}
@@ -465,7 +471,9 @@ workflow read_based {
 
 workflow {
 
-    read_based(filtered_ch, 
+     read_based(reads_per_sample,
+                metadata,
+                filtered_ch, 
                 params.krakendb_dir,
                 params.kaijudb_dir,
                 params.chocophlan_dir,

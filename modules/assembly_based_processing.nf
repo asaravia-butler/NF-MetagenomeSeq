@@ -5,7 +5,7 @@ nextflow.enable.dsl = 2
 ***************************  Assembly-based processing workflow *************************
 ****************************************************************************************/
 
-// Assembly-based workflow
+/ Assembly-based workflow
 // Processes to create the required database(s) if not provided
 include { SETUP_CAT_DB; SETUP_KOFAMSCAN_DB; SETUP_GTDBTK_DB;
           SETUP_CHOCOPHLAN} from "./database_creation.nf"

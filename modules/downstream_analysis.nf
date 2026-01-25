@@ -195,8 +195,8 @@ process BARPLOT {
       path(metadata)  // 'mapping/metadata.txt'
         
     output:
-         path("${prefix}_barplot${params.assay_suffix}.png"), emit: plot
-         path("${prefix}_barplot${params.assay_suffix}.html"), emit: html
+         path("${meta.prefix}_barplot${params.assay_suffix}.png"), emit: plot
+         path("${meta.prefix}_barplot${params.assay_suffix}.html"), emit: html
          path("versions.txt"), emit: version
 
     script:

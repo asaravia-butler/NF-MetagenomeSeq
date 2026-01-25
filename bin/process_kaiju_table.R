@@ -137,6 +137,9 @@ process_kaiju_table <- function(file_path, taxon_col="taxon_name") {
   # Set the taxon names as row names, drop the taxonomy column and convert to a matrix
   rownames(abs_abun_df) <- abs_abun_df[,"taxonomy"]
   abs_abun_df <- abs_abun_df[,-(which(colnames(abs_abun_df) == "taxonomy"))]
+  # Drop unwanted columns if present
+  unwanted_columns <- grep("\\.dmp$", colnames(abs_abun_df))
+  if(length(unwanted_columns) > 0) { abs_abun_df <- abs_abun_df[,-unwanted_columns] }
   abs_abun_matrix <- as.matrix(abs_abun_df)
   
   return(abs_abun_matrix)

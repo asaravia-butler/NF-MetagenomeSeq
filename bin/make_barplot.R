@@ -218,20 +218,22 @@ abund_table <- count_to_rel_abundance(feature_table)
 p <- make_plot(abund_table , metadata, colors2use, publication_format, samples_column) +
      facet_wrap(facet_by, nrow=1, scales = "free_x")
 
+static_plot <- p
 number_of_species <- p$data$Species %>% unique() %>% length()
 
 # Don't save legend if the number of species to plot is greater than 30
 if(number_of_species > 30) {
   
-  p <- p + theme(legend.position = "none")
+  static_plot <- static_plot + theme(legend.position = "none")
   
 }
 
 width <- 2 * nrow(metadata) # 3.6 * number_of_samples
+if(width < 14) { width = 14 } # set minimum width to 14 inches
 if(width > 50) { width = 50 } # Cap plot with at 50 inches
 # Save Static
 ggsave(filename = glue("{prefix}_barplot{suffix}.png"), 
-       plot = p,
+       plot = static_plot,
        device = 'png', width =width,
        height = 10, units = 'in', dpi = 300 , limitsize = FALSE)
 

@@ -234,6 +234,11 @@ feature_table <- feature_table[,-1]  %>% as.matrix()
 metadata <- read_delim(metdata_file) %>% as.data.frame()
 row.names(metadata) <- metadata[,samples_column]
 
+# Subset metadata and feature table  to contain the samples
+samples <- intersect(colnames(feature_table), rownames(metadata))
+metadata <- metadata[samples,]
+feature_table <- feature_table[,samples]
+
 # Run decontam
 contamdf <- run_decontam(feature_table, metadata, threshold, prev_col, freq_col, ntc_name) 
 
