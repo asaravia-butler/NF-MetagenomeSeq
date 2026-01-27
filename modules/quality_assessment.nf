@@ -75,7 +75,7 @@ process MULTIQC {
     path(multiqc_config)
     path(files)
   output:
-    path("${params.additional_filename_prefix}${prefix}_multiqc${params.assay_suffix}_report.zip"), emit: report
+    path("${params.additional_filename_prefix}${prefix}_multiqc_report"), emit: report_dir
     path("${params.additional_filename_prefix}${prefix}_reads_per_sample.tsv"), emit: reads_per_sample
     path("versions.txt"), emit: version
   script:
@@ -105,14 +105,34 @@ process MULTIQC {
           
       fi  
 
-      # zipping and removing unzipped dir
-      zip -q -r \\
-           ${params.additional_filename_prefix}${prefix}_multiqc${params.assay_suffix}_report.zip \\
-           ${params.additional_filename_prefix}${prefix}_multiqc_report
-
       multiqc --version > versions.txt
     """
   }
+
+
+process ZIP_MULTIQC {
+
+    tag "Zipping ${prefix} multiqc.."
+    label "zip"
+ 
+    input:
+        val(prefix)
+        path(multiqc_dir)
+
+    output:
+        path("${params.additional_filename_prefix}${prefix}_multiqc${params.assay_suffix}_report.zip"), emit: report
+        path("versions.txt"), emit: version
+
+    script:
+        """
+        # zipping and removing unzipped dir
+        zip -q -r \\
+           ${params.additional_filename_prefix}${prefix}_multiqc${params.assay_suffix}_report.zip \\
+           ${multiqc_dir}
+
+        zip -h | grep "Zip" | sed -E 's/(Zip.+\\)).+/\\1/' > versions.txt
+        """
+}
 
 
 //  This process runs quality filtering/trimming on input fastq files.
@@ -295,10 +315,13 @@ workflow nano_quality_check {
                               .flatten()
                               .collect()
         MULTIQC(prefix_ch, multiqc_config, nanoplot_ch)
+        ZIP_MULTIQC(prefix_ch, MULTIQC.out.report_dir)
 
         software_versions_ch = Channel.empty()
         NANOPLOT.out.version | mix(software_versions_ch) | set{software_versions_ch}
         MULTIQC.out.version | mix(software_versions_ch) | set{software_versions_ch}
+        ZIP_MULTIQC.out.version | mix(software_versions_ch) | set{software_versions_ch}
+
 
     emit:
         reads_per_sample = MULTIQC.out.reads_per_sample
@@ -319,10 +342,12 @@ workflow quality_check {
         FASTQC(reads_ch)
         fastqc_ch = FASTQC.out.html.flatten().collect()
         MULTIQC(prefix_ch, multiqc_config, fastqc_ch)
+        ZIP_MULTIQC(prefix_ch, MULTIQC.out.report_dir)
 
         software_versions_ch = Channel.empty()
         FASTQC.out.version | mix(software_versions_ch) | set{software_versions_ch}
         MULTIQC.out.version | mix(software_versions_ch) | set{software_versions_ch}
+        ZIP_MULTIQC.out.version | mix(software_versions_ch) | set{software_versions_ch}
 
     emit:
         reads_per_sample = MULTIQC.out.reads_per_sample 

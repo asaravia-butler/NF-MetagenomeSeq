@@ -227,7 +227,7 @@ include { quality_check as noblank_qc } from "./modules/quality_assessment.nf"
 include { quality_check as nohost_qc } from "./modules/quality_assessment.nf"
 
 // Remove contaminant
-include { remove_contaminants } from "./modules/remove_contaminant.nf"
+include { illumina_remove_contaminants as remove_contaminants } from "./modules/remove_contaminant.nf"
 
 // Remove host
 include { remove_host } from "./modules/remove_host.nf"
@@ -382,16 +382,16 @@ workflow {
     remove_host.out.versions | mix(software_versions_ch) | set{software_versions_ch}
 
     // Prepare metadata
-    meta_header = Channel.of(["sample_id", "group", "sample_or_ntc", "concentration"])
+    meta_header = Channel.of(["sample_id", "group", "NTC", "concentration"])
     file_ch.map{
-                row -> tuple( "${row.sample_id}", row.group, row.sample_or_ntc, row.concentration )
+                row -> tuple( "${row.sample_id}", row.group, deleteWS(row.NTC), row.concentration )
                 }
                 .distinct()
                 .set{body}
 
     meta_header.concat(body)
-              .map{ sample_id, group, sample_or_ntc, concentration ->
-                   "${sample_id},${group},${sample_or_ntc},${concentration}"
+              .map{ sample_id, group, NTC, concentration ->
+                   "${sample_id},${group},${NTC},${concentration}"
               }
               .collectFile(name: "metadata_file.txt", newLine: true, sort:false)
               .set{metadata}

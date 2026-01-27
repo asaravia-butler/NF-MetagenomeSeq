@@ -138,6 +138,7 @@ process CAT_FASTQ_DIR {
     label "bit"
 
     input:
+        path(sample_to_barcode_file) // a 2-column comma separated file mapping barcode to sample id
         path(demux_dir) // demultiplexed/
 
     output:
@@ -151,19 +152,28 @@ process CAT_FASTQ_DIR {
     WORK_DIR=`pwd`
     # Initiate runsheet header
     echo "sample_id,forward" > \${WORK_DIR}/runsheet.csv
-  
-    # Change to directory containing split fastq files generated from step 2a. split fastq above
+
+    # Initiate sample name to barcode associative array
+    declare -A SAMPLE_TO_BARCODE
+
+    # Read file line-by-line into associative array
+    # Handles spaces in values safely
+    while IFS=',' read -r sample barcode; do
+         # Skip empty lines or lines without both columns
+        [[ -z "\${sample}" || -z "\${barcode}" ]] && continue
+        SAMPLE_TO_BARCODE["\${sample}"]="\${barcode}"
+    done < ${sample_to_barcode_file}
+
+    # Change to directory containing split fastq files generated
+    # from the split fastq process above
     cd ${demux_dir} # demultiplexed/
 
-    # Get unique barcode names from demultiplexed file names
-    BARCODES=(\$(ls -1 *fastq* | sed -E 's/.+_(barcode[0-9]+).+/\\1/g' | grep -v 'unclassified' | sort -u))
-
-
     # Concat separate barcode/sample fastq files into per sample fastq gzippped files
-    for sample in \${BARCODES[*]}; do
+    for sample in "\${!SAMPLE_TO_BARCODE[@]}"; do
+
 
     [ -d  \${WORK_DIR}/\${sample}/ ] ||  mkdir -p \${WORK_DIR}/\${sample}/  
-    cp *_\${sample}*  \${WORK_DIR}/\${sample}/ 
+    cp *_\${SAMPLE_TO_BARCODE[\$sample]}*  \${WORK_DIR}/\${sample}/ 
 
     
     if ls -1 \${WORK_DIR}/\${sample}/| head -n1| xargs -I {} gzip -t \${WORK_DIR}/\${sample}/{}  2>/dev/null; then 
@@ -178,7 +188,6 @@ process CAT_FASTQ_DIR {
 
     fi
 
-
     gzip \${WORK_DIR}/\${sample}.fastq && \\
     rm -rf \${WORK_DIR}/\${sample}/
 
@@ -191,8 +200,6 @@ process CAT_FASTQ_DIR {
     VERSION=\$(echo \$(cat --version 2>&1) | sed 's/^.*coreutils) //; s/ .*\$//')
     echo "cat \${VERSION}" > versions.txt
     """
-
-
 }
 
 workflow{

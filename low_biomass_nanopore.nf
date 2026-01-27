@@ -348,7 +348,7 @@ workflow {
 
         // One fastq file per sample
         file_ch.map{
-                row -> tuple( "${row.sample_id}", [file("${row.forward}", checkIfExists: true)], deleteWS(row.paired))
+                row -> tuple("${row.sample_id}", [file("${row.forward}", checkIfExists: true)], deleteWS(row.paired))
                 }.set{reads_ch}
      
      }else if(params.input_type == 'multiple'){
@@ -359,14 +359,14 @@ workflow {
         file_ch.map{ row ->
             def meta = [id: row.sample_id]
             [meta, [file(row.forward, checkIfExists: true)]]
-        }.groupTuple() // group by map ids
+        }.groupTuple() // group by map ids i.e sample_id
          .map { meta, reads -> [ meta.id, reads.flatten() ] } // [sample_id, [reads]]
          .set{read_ch}
 
          // Get distinct sample metedata
          file_ch.map{
                 row -> tuple( "${row.sample_id}", deleteWS(row.group),
-                                deleteWS(row.sample_or_ntc), deleteWS(row.concentration),
+                                deleteWS(row.NTC), deleteWS(row.concentration),
                                 deleteWS(row.paired) )
                 }
                 .distinct()
@@ -379,13 +379,13 @@ workflow {
             .join(meta_ch)
             .set{concated_files_ch}
 
-        header = Channel.of(["sample_id", "forward", "group", "sample_or_ntc", "concentration", "paired"]) 
+        header = Channel.of(["sample_id", "forward", "group", "NTC", "concentration", "paired"]) 
 
         header.concat(concated_files_ch)
-              .map{ sample_id, forward, group, sample_or_ntc, concentration, paired ->
-                   "${sample_id},${forward},${group},${sample_or_ntc},${concentration},${paired}"
+              .map{ sample_id, forward, group, NTC, concentration, paired ->
+                   "${sample_id},${forward},${group},${deleteWS(NTC)},${concentration},${paired}"
               }
-              .collectFile(name: "${launchDir}/samples_file.txt", newLine: true, sort:false)
+              .collectFile(name: "${launchDir}/samples_file.csv", newLine: true, sort:false)
               .splitCsv(header:true)
               .set{InFile_ch}
 
@@ -411,7 +411,17 @@ workflow {
          // Basecall, demultiplex and concatenate demultiplexed fastq files
          DORADO_BASECALLER(pod5_dir, params.kit_name)
          DORADO_DEMUX(DORADO_BASECALLER.out.bam, params.kit_name)
-         CAT_FASTQ_DIR(DORADO_DEMUX.out.demux_dir)
+
+         // Create 2-colum file to remame barcode names to sample names
+         // sample_id to barcode_id column in --input_file
+        
+        file_ch.map{  row ->
+                   "${row.sample_id},${row.barcode}"
+              }
+              .collectFile(name: "sample2barcode_file.csv", newLine: true, sort:false)
+              .set{sample2barcode}
+
+         CAT_FASTQ_DIR(sample2barcode, DORADO_DEMUX.out.demux_dir)
          
         // Read-in runsheet generated fromm conactenating fastq files above
         CAT_FASTQ_DIR.out.runsheet.splitCsv(header:true)
@@ -419,16 +429,16 @@ workflow {
                 row -> tuple( "${row.sample_id}", [file("${row.forward}", checkIfExists: true)])
                 }.set{runsheet_ch}
 
-         // read unput file into tuples
+         // Read input file into tuples
          file_ch.map{
                 row -> tuple( "${row.sample_id}", deleteWS(row.group),
-                                deleteWS(row.sample_or_ntc), deleteWS(row.concentration),
+                                deleteWS(row.NTC), deleteWS(row.concentration),
                                 deleteWS(row.paired) )
                 }.set{InFile_ch}
 
         // Merge the genearted fastq files with their corresponding metadata
         runsheet_ch.join(InFile_ch)
-                    .map{sample_id, forward, group, sample_or_ntc, concentration, paired -> 
+                    .map{sample_id, forward, group, NTC, concentration, paired -> 
                     tuple(sample_id, forward, paired)
                 }.set{reads_ch}
 
@@ -490,16 +500,16 @@ workflow {
     //DECONTAMED_MAP2GENOME.out.version | mix(software_versions_ch) | set{software_versions_ch}
 
     // Prepare metadata
-    meta_header = Channel.of(["sample_id", "group", "sample_or_ntc", "concentration"])
+    meta_header = Channel.of(["sample_id", "group", "NTC", "concentration"])
     file_ch.map{
-                row -> tuple( "${row.sample_id}", row.group, row.sample_or_ntc, row.concentration )
+                row -> tuple( "${row.sample_id}", row.group, deleteWS(row.NTC), row.concentration )
                 }
                 .distinct()
                 .set{body}
 
     meta_header.concat(body)
-              .map{ sample_id, group, sample_or_ntc, concentration ->
-                   "${sample_id},${group},${sample_or_ntc},${concentration}"
+              .map{ sample_id, group, NTC, concentration ->
+                   "${sample_id},${group},${NTC},${concentration}"
               }
               .collectFile(name: "metadata_file.txt", newLine: true, sort:false)
               .set{metadata}

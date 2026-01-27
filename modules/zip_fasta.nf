@@ -4,7 +4,7 @@ nextflow.enable.dsl=2
 process ZIP_FASTA {
 
     tag "Zipping up your ${TYPE}s..."
-    label "genelab"
+    label "zip"
 
 
     input:
@@ -57,7 +57,8 @@ process ZIP_FASTA {
              done
 
         fi
-        GL-version | grep "GeneLab utils"| sed -E 's/^\\s+//' > versions.txt
+
+        zip -h | grep "Zip" | sed -E 's/(Zip.+\\)).+/\\1/' > versions.txt
         """
 
 }

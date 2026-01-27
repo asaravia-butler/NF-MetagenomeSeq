@@ -1,41 +1,9 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl = 2
 
-//include { SAMTOOLS_SORT; SAMTOOLS_INDEX; SAMTOOLS_STATS } from "./samtools.nf"
-//include { SAMTOOLS_FASTQ as  NANO_REMOVE_CONTAMINANT} from "./samtools.nf"
 include { SAMTOOLS_FILTER_FASTQ as  NANO_REMOVE_CONTAMINANT} from "./samtools.nf"
 
 // max_mem = 100e9 // 100GB
-
-process ASSEMBLE_CONTAMINANT {
-
-    tag "Assembling contaminants.."
-
-    input:
-       
-        path(forward)
-        path(reverse)
-        val(isPaired)
-
-    output:
-        path("blank_final.contigs.fa"), emit: assembly
-        path("blank-assembly.log"), emit: log
-        path("versions.txt"), emit: version
-    
-    script:
-        def input = isPaired == "true" ? 
-                "-1 ${forward.join(',')} -2 ${reverse.join(',')}" : "-r ${forward.join(',')}"
-        """
-        megahit ${input} -m ${params.max_mem} \\
-           -t ${task.cpus} -o blank-megahit-out \\
-           > blank-assembly.log 2>&1
-
-        # Rename assembly
-        mv blank-megahit-out/final.contigs.fa blank_final.contigs.fa
-        megahit -v > versions.txt
-        """
-}
-
 
 process SPADES {
 
@@ -252,8 +220,6 @@ process MAPPING_TO_CONTAMINANT {
 
 
 
-
-
 // A function to delete white spaces from an input string and covert it to lower case
 def deleteWS(string){
 
@@ -262,7 +228,7 @@ def deleteWS(string){
 }
 
 
-workflow remove_contaminants {
+workflow illumina_remove_contaminants {
 
 
     take:
@@ -271,7 +237,7 @@ workflow remove_contaminants {
 
     main:
 
-        file_ch.map{row -> if(deleteWS(row.sample_or_ntc) == "ntc_sample") [row.sample_id] }.set{blank_samples}
+        file_ch.map{row -> if(deleteWS(row.NTC) == "true") [row.sample_id] }.set{blank_samples}
 
         isPaired  = filtered_ch.map{sample_id, reads, paired -> paired}.first()
          
@@ -300,42 +266,6 @@ workflow remove_contaminants {
 
 
 
-workflow megahit_remove_contaminants {
-
-
-    take:
-        file_ch
-        filtered_ch
-
-    main:
-
-        file_ch.map{row -> if(deleteWS(row.sample_or_ntc) == "ntc_sample") [row.sample_id] }.set{blank_samples}
-
-        isPaired  = filtered_ch.map{sample_id, reads, paired -> paired}.first()
-
-         // Retain only blank samples
-         filtered_ch.join(blank_samples).set{reads_ch}
-
-         forward   = reads_ch.map{sample_id, reads, paired -> reads[0]}.toSortedList()
-         reverse   = reads_ch.map{sample_id, reads, paired -> reads[1]}.toSortedList()
-
-
-        ASSEMBLE_CONTAMINANT(forward, reverse, isPaired)
-        BUILD_CONTAMINANT_DB(ASSEMBLE_CONTAMINANT.out.assembly)
-        REMOVE_CONTAMINANT(BUILD_CONTAMINANT_DB.out.index, filtered_ch)
-
-        // Collect software versions
-       software_versions_ch = Channel.empty()
-       ASSEMBLE_CONTAMINANT.out.version | mix(software_versions_ch) | set{software_versions_ch}
-       BUILD_CONTAMINANT_DB.out.version | mix(software_versions_ch) | set{software_versions_ch}
-       REMOVE_CONTAMINANT.out.version | mix(software_versions_ch) | set{software_versions_ch}
-
-    emit:
-       clean_reads = REMOVE_CONTAMINANT.out.reads
-       versions = software_versions_ch
-
-}
-
 workflow nano_remove_contaminants {
 
 
@@ -346,7 +276,7 @@ workflow nano_remove_contaminants {
     main:
 
         // Get blank samples names from input file
-        file_ch.map{row -> if(deleteWS(row.sample_or_ntc) == "ntc_sample") [row.sample_id] }.set{blank_samples}
+        file_ch.map{row -> if(deleteWS(row.NTC) == "true") [row.sample_id] }.set{blank_samples}
 
         // Retain only blank samples
         trimmed_ch.join(blank_samples).set{reads_ch}
@@ -360,30 +290,6 @@ workflow nano_remove_contaminants {
         // Map all samples reads to contaminant assembly
         MAPPING_TO_CONTAMINANT(BUILD_CONTAMINANT_INDEX.out.index, trimmed_ch)
         
-        /*
-        // Sort and convert sam to bam
-        SAMTOOLS_SORT(MAPPING_TO_CONTAMINANT.out.sam)
-        sort_ch = SAMTOOLS_SORT.out.bam
-        // Index bam
-        SAMTOOLS_INDEX(SAMTOOLS_SORT.out.bam)
-        index_ch = SAMTOOLS_INDEX.out.bai
-        // combine bam files with thier corresponding bam indices
-        bam_ch = sort_ch.join(index_ch)
-        // Collect sample mapping stats
-        SAMTOOLS_STATS(bam_ch)
-        SAMTOOLS_STATS.out.log.map{ sample_id, stats, logs ->
-                                   tuple(sample_id, [stats,logs])
-                                   }.set{log_ch}
-
-        // Remove unmapped reads/contaminants using samtools fastq
-        bam_ch.map{ sample_id, bam, bai -> 
-                         tuple([sample_id: sample_id, suffix: '_decontam', isPaired: 'false'],
-                                bam, bai)  
-                  }.set{mod_bam_ch}
-
-        NANO_REMOVE_CONTAMINANT(mod_bam_ch)
-        */
-
        /*
        - Sort and convert sam to bam
        - Index bam
@@ -406,9 +312,6 @@ workflow nano_remove_contaminants {
        FLYE.out.version | mix(software_versions_ch) | set{software_versions_ch}
        BUILD_CONTAMINANT_INDEX.out.version | mix(software_versions_ch) | set{software_versions_ch}
        MAPPING_TO_CONTAMINANT.out.version| mix(software_versions_ch) | set{software_versions_ch}
-       //SAMTOOLS_SORT.out.version| mix(software_versions_ch) | set{software_versions_ch}
-       //SAMTOOLS_INDEX.out.version| mix(software_versions_ch) | set{software_versions_ch}
-       //SAMTOOLS_STATS.out.version| mix(software_versions_ch) | set{software_versions_ch}
        NANO_REMOVE_CONTAMINANT.out.version | mix(software_versions_ch) | set{software_versions_ch}
 
     emit:

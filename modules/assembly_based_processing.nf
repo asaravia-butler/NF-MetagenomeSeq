@@ -184,9 +184,9 @@ workflow assembly_based {
         GT_FILTERED_HEATMAP(filt_gene_taxonomy_heatmap_meta, GT_FILTER_RARE.out.table, metadata)
         // Decontaminate with decontam
         decontam_gene_taxonomy_meta = Channel.of([feature: 'species', samples: 'sample_id',
-                                   prevalence: 'sample_or_ntc', frequency: 'concentration',
+                                   prevalence: 'NTC', frequency: 'concentration',
                                    decontam_threshold: 0.5, method: 'gene-taxonomy',
-                                   ntc_name: 'ntc_sample'])
+                                   ntc_name: 'true'])
 
         GT_DECONTAM(decontam_gene_taxonomy_meta, metadata, GT_FILTER_RARE.out.table)
         decontam_gene_taxonomy_heatmap_meta = Channel.of([group: "group", samples: 'sample_id',
@@ -211,9 +211,9 @@ workflow assembly_based {
        GF_FILTERED_HEATMAP(filt_gene_function_heatmap_meta, GF_FILTER_RARE.out.table, metadata)
        // Decontaminate with decontam
        decontam_gene_function_meta = Channel.of([feature: 'KO_ID', samples: 'sample_id',
-                                   prevalence: 'sample_or_ntc', frequency: 'concentration',
+                                   prevalence: 'NTC', frequency: 'concentration',
                                    decontam_threshold: 0.5, method: 'gene-function',
-                                   ntc_name: 'ntc_sample']) 
+                                   ntc_name: 'true']) 
        GF_DECONTAM(decontam_gene_function_meta, metadata, GF_FILTER_RARE.out.table)
        decontam_gene_function_heatmap_meta = Channel.of([group: "group", samples: 'sample_id',
                                                   prefix:  'Decontam-Combined-gene-level-KO'])
@@ -245,9 +245,9 @@ workflow assembly_based {
        CONTIG_FILTERED_HEATMAP(filt_contig_heatmap_meta, CONTIG_FILTER_RARE.out.table, metadata)
        // Decontaminated - using decontam threshold of 0.5 sice it was more likely to detect contaminats than 0.1.
        decontam_contig_meta = Channel.of([feature: 'species', samples: 'sample_id',
-                                   prevalence: 'sample_or_ntc', frequency: 'concentration',
+                                   prevalence: 'NTC', frequency: 'concentration',
                                    decontam_threshold: 0.5, method: 'contig-taxonomy', 
-                                   ntc_name: 'ntc_sample'])
+                                   ntc_name: 'true'])
        CONTIG_DECONTAM(decontam_contig_meta, metadata, CONTIG_FILTER_RARE.out.table)
        decontam_contig_heatmap_meta = Channel.of([group: "group", samples: 'sample_id', 
                                                   prefix:  'Decontam-Combined-contig-level-taxonomy'])

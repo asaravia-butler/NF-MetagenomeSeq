@@ -11,9 +11,9 @@
 #                  --feature-column 'Species' \
 #                  --metadata-table 'mapping/metadata.csv' \
 #                  --samples-column 'Sample_ID' \
-#                  --prevalence-column 'Sample_or_Control' \
+#                  --prevalence-column 'NTC' \
 #                  --frequency-column 'concentration' \
-#                  --ntc-name  'Control_Sample' \
+#                  --ntc-name  'true' \
 #                  --threshold 0.1 \
 #                  --classification-method 'kaiju' \
 #                  --assay-suffix '_GLlbnMetag' 
@@ -67,7 +67,7 @@ option_list <- list(
                     Deafault: 'concentration' ",
               metavar="frequency_column"),
   
-  make_option(c("-t", "--threshold"), type="numeric", default=0.1, 
+  make_option(c("-t", "--threshold"), type="numeric", default=0.5, 
               help="Dencontam's threshold (0-1) for both prevalence and frequency based analyses. \
                     Deafault: 0.1 ",
               metavar="threshold"),
@@ -100,7 +100,7 @@ opt_parser <- OptionParser(
                   --metadata-table 'mapping/metadata.csv' \\
                   --feature-table 'kaiju_species_table_GLlbnMetag' \\
                   --feature-column 'Species' \\ # ['Species', 'species', 'KO']
-                  --prevalence-column 'Sample_or_Control' \\
+                  --prevalence-column 'NTC' \\
                   --frequency-column 'concentration' \\
                   --classification-method 'taxonomy' \\
                   --threshold 0.1 " ,
@@ -145,7 +145,7 @@ library(tidyverse)
 
 # Feature table decontamination with decontam
 run_decontam <- function(feature_table, metadata, contam_threshold=0.1,
-                         prev_col=NULL, freq_col=NULL, ntc_name = "Control_Sample") {
+                         prev_col=NULL, freq_col=NULL, ntc_name = "true") {
   
   # Retain metadata for only the samples present in the inpute feature table
   sub_metadata <- metadata[colnames(feature_table),]
@@ -172,8 +172,6 @@ run_decontam <- function(feature_table, metadata, contam_threshold=0.1,
   # In our phyloseq object, `prev_col` is the sample variable that holds the negative 
   # control information. We'll summarize the data as a logical variable, with TRUE for control 
   # samples, as that is the form required by isContaminant.
-  # The line below assumes that control samples will always be named "Control_Sample"
-  # in the `prev_col`.
   sd <- as.data.frame(sample_data(ps)) # Extract sample metadata
   sd[,"is.neg"] <- 0 # Initialize
   sd[,"is.neg"] <- sample_data(ps)[[prev_col]] == ntc_name # Assign boolean value
@@ -213,9 +211,9 @@ feature_table_file <- opt[["feature-table"]] # 'kaiju_species_table_GLlbnMetag.c
 metdata_file <- opt[["metadata-table"]] # "metadata.csv"
 samples_column <-  opt[["samples-column"]] # 'Sample_ID'
 freq_col <- opt[["frequency-column"]] # "input_conc_ng"
-prev_col <- opt[["prevalence-column"]] # "Sample_or_Control"
-threshold <- opt[["threshold"]] # 0.1
-ntc_name <- opt[["ntc_name"]] # "Control_Sample"
+prev_col <- opt[["prevalence-column"]] # "NTC"
+threshold <- opt[["threshold"]] # 0.5
+ntc_name <- opt[["ntc_name"]] # "true"
 # "kaiju", "kraken2", "metaphlan", "contig-taxonomy", "gene-taxonomy", "gene-function"
 method <- opt[["classification-method"]] # 'kaiju'
 feature_column <- opt[["feature-column"]] # 'Species'

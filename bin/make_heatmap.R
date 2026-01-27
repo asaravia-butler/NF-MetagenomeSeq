@@ -164,6 +164,7 @@ annotation_colors  <- list(my_colors)
 names(annotation_colors) <- group_column
 
 # Create heatmap
+# All features may be difficult to visualize
 png(filename = glue("{prefix}_heatmap{suffix}.png"), width = width,
     height = height, units = "in", res=300)
 pheatmap(mat = feature_table[,rownames(col_annotation)],
@@ -177,3 +178,27 @@ pheatmap(mat = feature_table[,rownames(col_annotation)],
          annotation_colors = annotation_colors ,
          number_format = "%.0f")
 dev.off()
+
+
+sorted_features <- rowSums(feature_table) %>% sort(decreasing = TRUE)
+
+# Plot only top 50 features as it is often difficult to visualize all features at once
+if(length(sorted_features >= 50)) { 
+  
+  top50 <- sorted_features[1:50]
+
+png(filename = glue("{prefix}_top_50_heatmap{suffix}.png"), width = width,
+    height = 12, units = "in", res=300)
+pheatmap(mat = feature_table[names(top50), rownames(col_annotation)],
+         cluster_cols = FALSE, 
+         cluster_rows = FALSE, 
+         col = colours, 
+         angle_col = 90, 
+         display_numbers = TRUE,
+         fontsize = 12, 
+         annotation_col = col_annotation,
+         annotation_colors = annotation_colors ,
+         number_format = "%.0f")
+dev.off()
+
+}

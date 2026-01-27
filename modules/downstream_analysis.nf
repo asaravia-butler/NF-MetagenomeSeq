@@ -235,7 +235,7 @@ process HEATMAP {
 
         
     output:
-       path("${meta.prefix}_heatmap${params.assay_suffix}.png"), emit: plot
+       path("*_heatmap${params.assay_suffix}.png"), emit: plot
        path("versions.txt"), emit: version
 
 

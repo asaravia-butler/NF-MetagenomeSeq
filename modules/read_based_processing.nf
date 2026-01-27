@@ -315,9 +315,9 @@ workflow read_based {
         KRAKEN_FILTERED_BARPLOT(filt_kraken_barplot_meta, KRAKEN_FILTER_RARE.out.table, metadata)
         // Decontaminate with decontam
         decontam_kraken_meta = Channel.of([feature: 'Species', samples: 'sample_id',
-                                   prevalence: 'sample_or_ntc', frequency: 'concentration',
+                                   prevalence: 'NTC', frequency: 'concentration',
                                    decontam_threshold: 0.5, method: 'kraken2',
-                                   ntc_name: 'ntc_sample'])
+                                   ntc_name: 'true'])
         KRAKEN_DECONTAM(decontam_kraken_meta, metadata, KRAKEN_FILTER_RARE.out.table)
         decontam_kraken_barplot_meta = Channel.of([group: "group",
                                feature: 'Species',
@@ -357,9 +357,9 @@ workflow read_based {
         KAIJU_FILTERED_BARPLOT(filt_kaiju_barplot_meta, KAIJU_FILTER_RARE.out.table, metadata)
         // Decontaminate with decontam
         decontam_kaiju_meta = Channel.of([feature: 'Species', samples: 'sample_id',
-                                   prevalence: 'sample_or_ntc', frequency: 'concentration',
+                                   prevalence: 'NTC', frequency: 'concentration',
                                    decontam_threshold: 0.5, method: 'kaiju',
-                                   ntc_name: 'ntc_sample'])
+                                   ntc_name: 'true'])
         KAIJU_DECONTAM(decontam_kaiju_meta, metadata, KAIJU_FILTER_RARE.out.table)
         decontam_kaiju_barplot_meta = Channel.of([group: "group",
                                feature: 'Species',
@@ -429,9 +429,9 @@ workflow read_based {
         METAPHLAN_FILTERED_BARPLOT(filt_metaphlan_barplot_meta, METAPHLAN_FILTER_RARE.out.table, metadata)
         // Decontaminate with decontam
         decontam_metaphlan_meta = Channel.of([feature: 'Species', samples: 'sample_id',
-                                   prevalence: 'sample_or_ntc', frequency: 'concentration',
+                                   prevalence: 'NTC', frequency: 'concentration',
                                    decontam_threshold: 0.5, method: 'metaphlan',
-                                   ntc_name: 'ntc_sample'])
+                                   ntc_name: 'true'])
         METAPHLAN_DECONTAM(decontam_metaphlan_meta, metadata, METAPHLAN_FILTER_RARE.out.table)
         decontam_metaphlan_barplot_meta = Channel.of([group: "group",
                                feature: 'Species',

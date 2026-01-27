@@ -6,7 +6,7 @@
 #SBATCH --partition=priority ## Specifies the job queue to use, for urgent jobs change normal to priority ##
 #SBATCH --mem=20G ## Memory required to run the job in MB, this example is showing 10,000 MB or 10GB, change this number based on how much RAM you need ##
 #SBATCH --cpus-per-task=1 ## Number of CPUs to run the job, this example is showing 5 CPUs, change this number based on how many CPUs you need ##
-#SBATCH --mail-user=user@nasa.gov ## Specifies the e-mail address to e-mail when the job is complete, replace this e-mail address with your NASA e-mail address ##
+#SBATCH --mail-user=user@domain.com ## Specifies the e-mail address to e-mail when the job is complete, replace this e-mail address with your NASA e-mail address ##
 #SBATCH --mail-type=END ## Tells slurm to e-mail the address above when the job has completed ##
 
 . ~/.profile
@@ -27,20 +27,19 @@ WORKFLOW_DIR='/path/to/workflow_code/'
 
 # -------------- Nanopore
 
-
-
 # input dir
-bash ./launch.sh processing ${WORKFLOW_DIR}/low_biomass_nanopore.nf ${WORKFLOW_DIR}/nextflow.config '--input_file input_dir_barcodes.csv --errorStrategy "ignore" '
+bash ./launch.sh processing ${WORKFLOW_DIR}/low_biomass_nanopore.nf ${WORKFLOW_DIR}/nextflow.config '--input_type "directory"  --input_file input_dir_barcodes.csv --errorStrategy "ignore" --assay_suffix "_GLlblMetag" --input_dir "/path/to/pod5/directory/" --kit_name "SQK-RPB114-24" --isFast5 false '
 
 # single
-bash ./launch.sh processing ${WORKFLOW_DIR}/low_biomass_nanopore.nf ${WORKFLOW_DIR}/nextflow.config '--input_file single.csv  --errorStrategy "ignore"'
+bash ./launch.sh processing ${WORKFLOW_DIR}/low_biomass_nanopore.nf ${WORKFLOW_DIR}/nextflow.config '--input_type "single"  --input_file single.csv  --errorStrategy "ignore" --assay_suffix "_GLlblMetag"'
 
 # multiple
-bash ./launch.sh processing ${WORKFLOW_DIR}/low_biomass_nanopore.nf ${WORKFLOW_DIR}/nextflow.config '--input_file multiple.csv  --errorStrategy "ignore" '
+bash ./launch.sh processing ${WORKFLOW_DIR}/low_biomass_nanopore.nf ${WORKFLOW_DIR}/nextflow.config '--input_type "multiple" --input_file multiple.csv  --errorStrategy "ignore" --assay_suffix "_GLlblMetag" '
 
 
 # -------------- Illumina
-bash ./launch.sh processing ${WORKFLOW_DIR}/low_biomass_illumina.nf ${WORKFLOW_DIR}/nextflow.config '--input_file PE_file.csv --errorStrategy "ignore"  --technology "illumina" --assay_suffix "_GLlbnMetag"'
+bash ./launch.sh processing ${WORKFLOW_DIR}/low_biomass_illumina.nf ${WORKFLOW_DIR}/nextflow.config '--input_file sub_PE_file.csv --errorStrategy "ignore"  --technology "illumina" --assay_suffix "_GLlbsMetag"'
+
 
 
 
