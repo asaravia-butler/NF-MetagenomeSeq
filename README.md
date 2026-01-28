@@ -166,7 +166,7 @@ nextflow run low_biomass_nanopore.nf -resume -profile singularity --input_file m
 ##### 4aiii. Approach 3: Start with one FASTQ file per sample as input
 
 ```bash
-nextflow run low_biomass_nanopore.nf -resume -profile singularity --input_file single.csv -input_type "single" --errorStrategy "ignore"
+nextflow run low_biomass_nanopore.nf -resume -profile singularity --input_file single.csv --input_type "single" --errorStrategy "ignore"
 ```
 
 <br>
@@ -189,6 +189,7 @@ nextflow run low_biomass_nanopore.nf -resume -profile singularity --input_file s
 * `--isFast5`  - are the files in the `--input_dir` fast5 files? Set to true or false if the files are fast5 or pod5 files, respectively. 
 * `--errorStrategy "ignore"` - Instructions nextflow to continue processing the dataset even if an error is encountered.
 * `--input_file *.csv` - Specifies the input csv file containing required metadata about the samples including barcode information and paths to the input file(s) for each sample.
+* `--input_type` - The type of input data/sequences in the `--input_file` when running the nanopore workflow. Values are one of "single", "multiple" or "directory" for single fastq files per sample, multiple fastq files per sample or a Pod5/Fast5 directory, respectively. 
 * > *Note: These input files require specific formatting to be interpreted correctly. Please see the [runsheet documentation](examples/runsheet) in this repository for examples on how to format this file type for each approach.
 
 <br>
