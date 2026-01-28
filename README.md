@@ -150,7 +150,7 @@ nextflow run low_biomass_nanopore.nf --help
 ##### 4ai. Approach 1: Start with pod5 or fast5 files as input
 
 ```bash
-nextflow run low_biomass_nanopore.nf -resume -profile singularity --input_file input_dir_barcodes.csv  --input_dir /path/to/pod5/directory/  --kit_name "SQK-RPB114-24" --isFast5 false --errorStrategy "ignore"
+nextflow run low_biomass_nanopore.nf -resume -profile singularity --input_file input_dir_barcodes.csv --input_type "directory"  --input_dir /path/to/pod5/directory/  --kit_name "SQK-RPB114-24" --isFast5 false --errorStrategy "ignore"
 ```
 
 <br>
@@ -158,7 +158,7 @@ nextflow run low_biomass_nanopore.nf -resume -profile singularity --input_file i
 ##### 4aii. Approach 2: Start with multiple FASTQ files per sample as input
 
 ```bash
-nextflow run low_biomass_nanopore.nf -resume -profile singularity --input_file multiple.csv --errorStrategy "ignore"
+nextflow run low_biomass_nanopore.nf -resume -profile singularity --input_file multiple.csv --input_type "multiple" --errorStrategy "ignore"
 ```
 
 <br>
@@ -166,7 +166,7 @@ nextflow run low_biomass_nanopore.nf -resume -profile singularity --input_file m
 ##### 4aiii. Approach 3: Start with one FASTQ file per sample as input
 
 ```bash
-nextflow run low_biomass_nanopore.nf -resume -profile singularity --input_file single.csv --errorStrategy "ignore"
+nextflow run low_biomass_nanopore.nf -resume -profile singularity --input_file single.csv -input_type "single" --errorStrategy "ignore"
 ```
 
 <br>
