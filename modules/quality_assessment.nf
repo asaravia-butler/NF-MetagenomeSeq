@@ -44,7 +44,7 @@ process NANOPLOT {
     beforeScript "chmod +x ${projectDir}/bin/*"
 
     input:
-        val(prefix)
+        each prefix
         tuple val(sample_id), path(reads), val(isPaired)
 
     output:
