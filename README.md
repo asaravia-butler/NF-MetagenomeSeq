@@ -355,7 +355,13 @@ For instructions on how to setup Sequera Platforms please see the documentation 
 
 ```bash
 export TOWER_ACCESS_TOKEN=eyxxxxxxxxxxxxxxxQ1ZTE=
-nextflow run low_biomass_nanopore.nf -resume -with-tower -profile singularity --input_file single.csv --input_type "single" --errorStrategy "ignore"
+# Example command for the Nanopre Approach 3 using Nextflow tower
+nextflow run low_biomass_nanopore.nf -resume \
+    -with-tower \
+    -profile singularity \
+    --input_file single.csv \
+    --input_type "single" \
+    --errorStrategy "ignore"
 ```
 
 > *Note: These helper scripts [launch.sh](launch.sh) and [launch.slurm](launch.slurm) can be used to launch the workflow from anywhere and to submit your run to seqera platforms for workflow monitoring. Please see the scripts on how to run them after setting the required paths, parameters and variables.* 
