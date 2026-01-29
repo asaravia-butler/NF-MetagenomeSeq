@@ -216,7 +216,8 @@ row.names(metadata) <- metadata[,samples_column]
 
 abund_table <- count_to_rel_abundance(feature_table)
 p <- make_plot(abund_table , metadata, colors2use, publication_format, samples_column) +
-     facet_wrap(facet_by, nrow=1, scales = "free_x")
+     facet_wrap(facet_by, nrow=1, scales = "free_x") + 
+     theme(axis.text.x = element_text(angle = 90))
 
 static_plot <- p
 number_of_species <- p$data$Species %>% unique() %>% length()

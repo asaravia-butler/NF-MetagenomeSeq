@@ -48,7 +48,8 @@ The table below details the default maximum resource allocations for individual 
       - 4bi. [Approach 1: Start with paired-end FASTQ files as input](#4bi-approach-1-start-with-paired-end-fastq-files-as-input)  
       - 4bii. [Approach 2: Start with single-end FASTQ files as input](#4bii-approach-2-start-with-single-end-fastq-files-as-input)
          
-   - 4c. [Modify parameters and compute resources in the Nextflow config file](#4c-modify-parameters-and-compute-resources-in-the-nextflow-config-file)
+   - 4c. [Monitoring runs on seqera platforms](#4c-monitoring-runs-on-seqera-platforms)
+   - 4d. [Modify parameters and compute resources in the Nextflow config file](#4d-modify-parameters-and-compute-resources-in-the-nextflow-config-file)
    
 5. [Workflow Outputs](#5-workflow-outputs)  
    - 5a. [Main outputs](#5a-main-outputs)  
@@ -187,7 +188,7 @@ nextflow run low_biomass_nanopore.nf -resume -profile singularity --input_file s
 * `--input_dir` - Specifies the path to a directory containing pod5 or fast5 files generated after nanopore sequencing
 * `--kit_name` - Specifies the Oxford nanopore sequencing kit used
 * `--isFast5`  - are the files in the `--input_dir` fast5 files? Set to true or false if the files are fast5 or pod5 files, respectively. 
-* `--errorStrategy "ignore"` - Instructions nextflow to continue processing the dataset even if an error is encountered.
+* `--errorStrategy "ignore"` - Instruction nextflow to continue processing the dataset even if an error is encountered.
 * `--input_file *.csv` - Specifies the input csv file containing required metadata about the samples including barcode information and paths to the input file(s) for each sample.
 * `--input_type` - The type of input data/sequences in the `--input_file` when running the nanopore workflow. Values are one of "single", "multiple" or "directory" for single fastq files per sample, multiple fastq files per sample or a Pod5/Fast5 directory, respectively. 
 * > *Note: These input files require specific formatting to be interpreted correctly. Please see the [runsheet documentation](examples/runsheet) in this repository for examples on how to format this file type for each approach.
@@ -243,7 +244,7 @@ nextflow run low_biomass_illumina.nf  -resume -profile singularity --input_file 
 **Additional [Optional] Parameters For All Approaches For Both Long- and Short-Read**
 > *Note: See `nextflow run -h` and [Nextflow's CLI run command documentation](https://nextflow.io/docs/latest/cli.html#run) for more options and details on how to run Nextflow.*
 * `--assay_suffix ` – Specifies the suffix to add to each output file.
-* `--workflow` Specifies that workflow to be run. Options are one of [read-based, assembly-based, both]. Default: both.
+* `--workflow` Specifies the workflow to be run. Options are one of ["read-based", "assembly-based", "both"]. Default: both.
 * `--publishDir_mode` Specifies how nextflow handles output file publishing. Options can be found here https://www.nextflow.io/docs/latest/process.html#publishdir Default: link.
 * `--errorStrategy` Specifies how nextflow handles errors. Options can be found here https://www.nextflow.io/docs/latest/process.html#errorstrategy. Default: terminate.
 * `--swift_1S` Setting for trimming recommended when working with Swift 1S libraries.
@@ -321,12 +322,23 @@ nextflow run low_biomass_illumina.nf  -resume -profile singularity --input_file 
 * `conda_medaka` Path to a conda environment with medaka installed. Default: null.
 * `conda_rvis` Path to a conda environment with r visulization packages (tifyverse, pheatmap, htmlwidgets etc.) installed. Default: null.
 
-
-
-> *Note: These helper scripts [launch.sh](launch.sh) and [launch.slurm](launch.slurm) can be used to launch the workflow from anywhere and to submit your run to nextflow tower for workflow monitoring. Please see the scripts on how to run them after setting the required paths and parameters* 
 <br>
 
-#### 4c. Modify parameters and compute resources in the Nextflow config file
+#### 4c. Monitoring runs on seqera platforms
+
+Seqera Platform, previously known as Nextflow Tower, is the centralized command post for data management and workflows. It brings monitoring, logging and observability to distributed workflows and simplifies the deployment of workflows on any cloud, cluster or laptop.
+
+For instructions on how to setup Sequera Platforms please see the documentation [here](https://training.nextflow.io/2.0.1/basic_training/seqera_platform/). Once you have Seqera platforms set up by following the instructions in the link, you simply need to add the `-with-tower` flag to the nextflow command to monitor your run on the platform. For example:
+
+```bash
+export TOWER_ACCESS_TOKEN=eyxxxxxxxxxxxxxxxQ1ZTE=
+nextflow run low_biomass_nanopore.nf -resume -with-tower -profile singularity --input_file single.csv --input_type "single" --errorStrategy "ignore"
+```
+
+> *Note: These helper scripts [launch.sh](launch.sh) and [launch.slurm](launch.slurm) can be used to launch the workflow from anywhere and to submit your run to seqera platforms for workflow monitoring. Please see the scripts on how to run them after setting the required paths, parameters and variables.* 
+<br>
+
+#### 4d. Modify parameters and compute resources in the Nextflow config file
 
 Additionally, all parameters and workflow resources can be directly specified in the [nextflow.config](nextflow.config) file. For detailed instructions on how to modify and set parameters in the config file, please see the [documentation here](https://www.nextflow.io/docs/latest/config.html).
 
