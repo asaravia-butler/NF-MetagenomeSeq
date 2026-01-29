@@ -479,7 +479,7 @@ workflow {
     trimmed_qc.out.versions | mix(software_versions_ch) | set{software_versions_ch}
 
     // Remove human reads and quality check (remove_contaminants.out.clean_reads, remove_host.out.clean_reads)
-    remove_human("HRrm", null, null, null, params.human_db_dir, trimmed_ch)
+    remove_human("HRrm", "human", params.human_db_url, null, params.human_db_dir, trimmed_ch)
     nohum_qc(Channel.of("HRrm"), params.multiqc_config, remove_human.out.clean_reads,remove_human.out.logs)
     remove_human.out.versions | mix(software_versions_ch) | set{software_versions_ch}
 
